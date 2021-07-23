@@ -1,0 +1,16 @@
+{
+  "name": "sample-http",
+  "version": "0.0.1",
+  "dependencies": {
+    "@google-cloud/storage": "^5.0.0",
+    "co": "4.6.0",
+    "firebase-admin": "^9.1.1",
+    "fs": "0.0.1-security",
+    "moment": "^2.26.0",
+    "moment-timezone": "^0.5.31",
+    "mongodb": "3.x",
+    "nodemailer": "^6.4.8",
+    "request": "2.88.2",
+    "xmlhttprequest": "^1.8.0"
+  }
+}

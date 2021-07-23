@@ -1,0 +1,124 @@
+<html lang="en">
+    <head>
+        <style>
+            body {
+                font-family: Calibri;
+                font-size: 13px;
+            }
+            table {
+                border-collapse: collapse;
+                border-spacing: 0;
+                box-sizing: border-box;
+                background-color: #e3e3e3;
+                font-size: inherit;
+                margin-top: 5px;
+                text-align: center;
+            }
+            table tr th, table tr td {
+                padding: 3px 8px;
+                border: 1.5px solid white;
+            }
+            table tr th {
+                background-color: #989898;;
+                color: white;
+                border-bottom: 2.5px solid white;
+            }
+            table tr:nth-child(even) {
+                background-color: #f0f0f0;
+            }
+            table tr:nth-child(odd) {
+                background-color: #e0e0e0;
+            }
+            .no-remarks {
+                color: red;
+                font-weight: bold;;
+            }
+        </style>
+    </head>
+    <body>
+        <div>Good day <b>Recipient X</b>,</div>
+        <br>
+        <div>As of <b>February 13, 2020, 3:00 PM</b>, below are the summary of concerned units in <b>Site X</b>.</div>
+        <br>
+        <b>Summary:</b>
+        <table>
+            <thead>
+                <tr>
+                    <th>Delay Type</th>
+                    <th>Cluster</th>
+                    <th>No. of Units</th>
+                    <th>Ave. Target Time</th>
+                    <th>Ave. Time-lapse</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Over CICO</td>
+                    <td>2</td>
+                    <td>2</td>
+                    <td>3.04 hrs</td>
+                    <td>3.04 hrs</td>
+                </tr>
+                <tr>
+                    <td>Long Queue</td>
+                    <td>2</td>
+                    <td>1</td>
+                    <td>1.30 hrs</td>
+                    <td>1.30 hrs</td>
+                </tr>
+            </tbody>
+        </table>
+        <br>
+        <b>Details:</b>
+        <table>
+            <thead>
+                <tr>
+                    <th>Delay Type</th>
+                    <th>Cluster</th>
+                    <th>Plate Number</th>
+                    <th>Trailer Number</th>
+                    <th>Shipment Number</th>
+                    <th>Target Time</th>
+                    <th>Actual Time-lapse</th>
+                    <th>Remarks</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Over CICO</td>
+                    <td>2</td>
+                    <td>ABS 124</td>
+                    <td>####</td>
+                    <td>213123123</td>
+                    <td>3.45 hrs</td>
+                    <td>3.45 hrs</td>
+                    <td class="no-remarks">No remarks received</td>
+                </tr>
+                <tr>
+                    <td>Long Queue</td>
+                    <td>1</td>
+                    <td>JDH 932</td>
+                    <td>####</td>
+                    <td>345345341</td>
+                    <td>1.28 hrs</td>
+                    <td>1.28 hrs</td>
+                    <td>Prioritized T2 Units</td>
+                </tr>
+                <tr>
+                    <td>Long Queue</td>
+                    <td>1</td>
+                    <td>RTW 862</td>
+                    <td>####</td>
+                    <td>345345341</td>
+                    <td>1.30 hrs</td>
+                    <td>1.30 hrs</td>
+                    <td>Bulk Arrival</td>
+                </tr>
+            </tbody>
+        </table>
+        <br>
+        <div>Thank you!</div>
+        <div><hr style="border: 0;border-top: 1px solid #eee;margin: 20px 0px;"></div>
+        <div style="font-size: 11px;margin-bottom: 20px;color: #a0aeba;">© 2020 <a href="https://www.wru.ph" target="_blank" style="color: #71bd46;text-decoration: none;">WRU Corporation</a>. All Rights Reserved</div>
+    </body>
+</html>

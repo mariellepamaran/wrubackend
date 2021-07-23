@@ -1,0 +1,15 @@
+How to setup CORS in Google Cloud Storage Buckets
+1. Go Google Cloud
+2. Open Terminal or gsutil
+
+GET
+  > Type: gsutil cors get gs://BUCKETNAME
+
+SET
+  > Type: echo '[{"origin": ["<DOMAINNAME OR *>"],"responseHeader": ["Content-Type"],"method": ["GET"],"maxAgeSeconds": 3600}]' > cors-config.json
+  > Type: gsutil cors set cors-config.json gs://BUCKETNAME
+
+Example:
+  > echo '[{"origin": ["*"],"responseHeader": ["Content-Type"],"method": ["GET"],"maxAgeSeconds": 3600}]' > cors-config.json
+  or
+  > echo '[{"origin": ["https://wrudispatch-dev.azurewebsites.net"],"responseHeader": ["Content-Type"],"method": ["GET"],"maxAgeSeconds": 3600}]' > cors-config.json

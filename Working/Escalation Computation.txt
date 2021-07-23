@@ -1,0 +1,30 @@
+OVER TRANSIT
+Escalation 1: Delay is >0hour and <=1hour
+Escalation 2: Delay is >1 hour and <= 3hours
+Escalation 3: Delay is >3hours
+
+LONG QUEUEING
+Escalation 1: Delay is >30 minutes and <=1hour
+Escalation 2: Delay is >1 hour and <= 1hour & 30 minutes
+Escalation 3: Delay is >1hour & 30 minutes
+
+OVER CICO
+Escalation 1: Delay is >0hour and <=1hour
+Escalation 2: Delay is >1 hour and <= 3hours
+Escalation 3: Delay is >3hours
+
+
+OVER TRANSIT
+TIME = Current time (ms) - Shipment's In Transit Time (ms)
+TIMELAPSE = Decimal hour conversion of TIME
+DELAY = TIMELAPSE - Route's Allotted Transit Time
+
+LONG QUEUEING
+TIME = Current time (ms) - Shipment's Queueing (Destination) Time (ms)
+TIMELAPSE = Decimal hour conversion of TIME
+DELAY = TIMELAPSE
+
+OVER CICO
+TIME = Current time (ms) - Shipment's Queueing/Processing (Destination) Time (ms)
+TIMELAPSE = Decimal hour conversion of TIME
+DELAY = TIMELAPSE - Site's Allotted CICO Time
