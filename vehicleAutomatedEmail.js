@@ -27,9 +27,11 @@ exports.vehicleAutomatedEmail = (req, res) => {
         var client = yield mongodb.MongoClient.connect(uri,{ useUnifiedTopology: true }),
             CLIENTS = {
                   "wd-coket1":null,
+                  "wd-coket2":null,
             },
             CLIENT_NAME = {
                 "wd-coket1": "CokeT1",
+                "wd-coket2": "CokeT2",
             },
             date = moment(new Date()).format("MM/DD/YYYY"),
             date1 = moment(new Date()).format("MM_DD_YYYY"),

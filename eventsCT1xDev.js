@@ -4,26 +4,19 @@ const ObjectId = require('mongodb').ObjectID;
 const moment = require('moment-timezone');
 const request = require('request');
 
-const uri = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+// PRODUCTION
+// const uri = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+// DEVELOPMENT
+const uri = "mongodb://marielle:gwt2sqiMDZ5JnBM@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
 
-exports.events = (req, res) => {
+exports.eventsCT1xDev = (req, res) => {
     res.set('Content-Type','application/json');
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Headers', '*');
     res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
 
-    try {
-        var queryString = Object.keys(req.query).map(key => key + '=' + req.query[key]).join('&');
-        request({
-            method: 'GET',
-            url: `https://asia-east2-secure-unison-275408.cloudfunctions.net/eventsCT1xDev?${queryString}`,
-        });
-    } catch (error){
-        console.log("Request Error",error);
-    }
-
-    var eventShipmentURL = "https://asia-east2-secure-unison-275408.cloudfunctions.net/eventsCT1_Shipments";
-    var eventCICOURL = "https://asia-east2-secure-unison-275408.cloudfunctions.net/eventsCT1_CICO";
+    var eventShipmentURL = "https://asia-east2-secure-unison-275408.cloudfunctions.net/eventsCT1xDev_Shipments";
+    var eventCICOURL = "https://asia-east2-secure-unison-275408.cloudfunctions.net/eventsCT1xDev_CICO";
 
     co(function*() {
         moment.tz.setDefault("Asia/Manila");

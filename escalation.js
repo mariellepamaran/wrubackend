@@ -47,7 +47,7 @@ exports.escalation = (req, res) => {
         var client = yield mongodb.MongoClient.connect(uri,{ useUnifiedTopology: true }),
             CLIENTS = {
                 "coket1":{ pathName: "CokeT1" },
-                "wilcon":{ pathName: "Wilcon" }, // , options: { overCICO: "startAt-startOfShift"  }
+                "wilcon":{ pathName: "Wilcon", options: { overCICO: "startAt-startOfShift"  } },
             },
             process = function(clientName,pathName){
                 const db = client.db(`wd-${clientName}`),
@@ -413,12 +413,16 @@ exports.escalation = (req, res) => {
                                                 if(CLIENTS[clientName] && CLIENTS[clientName].options && CLIENTS[clientName].options.overCICO == "startAt-startOfShift"){
                                                     var scheduled_date = moment(doc.scheduled_date).format("MMM DD, YYYY");
                                                     var shift_schedule = (doc.shift_schedule||"").split(" - ")[0];
-                                                    var startOfShift = new Date(scheduled_date + ", " + shift_schedule).getTime();
+                                                    var startOfShift = moment.tz(scheduled_date + ", " + shift_schedule, "MMM DD, YYYY, h:mm A", "Asia/Manila").valueOf();
+                                                    //moment(scheduled_date + ", " + shift_schedule).valueOf();
 
-                                                    cico_time = (startOfShift || getTimestamp()) - lastTimestamp;
+                                                    // cico_time = (startOfShift || getTimestamp()) - lastTimestamp;
+                                                    cico_time = Math.abs(getTimestamp() - startOfShift);
 
                                                     if(!startOfShift){
                                                         console.log("NO-SHIFT:",doc._id);
+                                                    } else {
+                                                        console.log("SHIFT!!:",doc._id,scheduled_date,shift_schedule,startOfShift,cico_time,getTimestamp(),moment.tz(scheduled_date + ", " + shift_schedule, "MMM DD, YYYY, h:mm A", "Asia/Manila").valueOf());
                                                     }
                                                 }
                                         
@@ -831,7 +835,6 @@ exports.escalation = (req, res) => {
                                 function escalation01(user={},tbl){
                                     var date = moment(new Date()).format("MMMM DD, YYYY, h:mm A"),
                                         link = "",
-                                        // https://wrudispatch.azurewebsites.net/Wilcon?data=eyJfaWRzIjpbIjAwMDAwMDAwOSJdLCJmb3IiOiJub3RpZmljYXRpb25zIn0=#notifications
                                         // linkData = { _ids: [], clientId: clientName, escalation: 1, username: user._id || "-", name: user.name || "" },
                                         linkData = {_ids:[],escalation,for:"notifications"},
                                         detailsHTML = "",
@@ -844,11 +847,12 @@ exports.escalation = (req, res) => {
                                         };
                                     tbl.forEach((val,i) => {
                                         site = val.site;
-                                        linkData._ids.push({
-                                            _id: val._id,
-                                            delay: val.delay_text,
-                                            type: val.delay_type
-                                        });
+                                        // linkData._ids.push({
+                                        //     _id: val._id,
+                                        //     delay: val.delay_text,
+                                        //     type: val.delay_type
+                                        // });
+                                        linkData._ids.push(val._id);
                                         notificationList.push({
                                             type: "delay",
                                             escalation,
@@ -902,7 +906,7 @@ exports.escalation = (req, res) => {
                                     });
                                     var baseString = JSON.stringify(linkData),
                                         encodedString = Buffer.from(baseString, 'binary').toString('base64');
-                                    link = `<br><div>Please click this <a href="https://wrudispatch.azurewebsites.net/${pathName}?data=${encodedString}#notifications" target="_blank">link</a> to proceed to your account for inputting of remarks.</div>`;
+                                        link = `<br><div>Please click this <a href="${websiteLink}/${pathName}?data=${encodedString}#notifications" target="_blank">link</a> to proceed to your account for inputting of remarks.</div>`;
                                     // link = `<br><div>Please click this <a href="${websiteLink}/remarks?data=${encodedString}" target="_blank">link</a> to proceed to your account for inputting of remarks.</div>`;
                                     return `<html lang="en">
                                                 <head>
@@ -1001,11 +1005,12 @@ exports.escalation = (req, res) => {
                                             site = val.site;
                                             cluster = val.cluster || "-";
                                         }
-                                        linkData._ids.push({
-                                            _id: val._id,
-                                            delay: val.delay_text,
-                                            type: val.delay_type
-                                        });
+                                        // linkData._ids.push({
+                                        //     _id: val._id,
+                                        //     delay: val.delay_text,
+                                        //     type: val.delay_type
+                                        // });
+                                        linkData._ids.push(val._id);
                                         notificationList.push({
                                             type: "delay",
                                             escalation,
@@ -1062,8 +1067,9 @@ exports.escalation = (req, res) => {
                                     });
                                     var baseString = JSON.stringify(linkData),
                                         encodedString = Buffer.from(baseString, 'binary').toString('base64');
+                                    
                                     // link = `<br><div>Please click this <a href="${websiteLink}/remarks?data=${encodedString}" target="_blank">link</a> to proceed to your account for inputting of remarks.</div>`;
-                                    link = `<br><div>Please click this <a href="https://wrudispatch.azurewebsites.net/${pathName}?data=${encodedString}#notifications" target="_blank">link</a> to proceed to your account for inputting of remarks.</div>`;
+                                    link = `<br><div>Please click this <a href="${websiteLink}/${pathName}?data=${encodedString}#notifications" target="_blank">link</a> to proceed to your account for inputting of remarks.</div>`;
                                     return `<html lang="en">
                                                 <head>
                                                     <style>

@@ -168,9 +168,19 @@ exports.eventsWilconDev = (req, res) => {
                     dispatchCollection.aggregate([
                         {
                             $match: {
-                                status: {
-                                    $nin: ["plan","scheduled","complete","incomplete"]
-                                }
+                                $or: [
+                                    {
+                                        status: {
+                                            $nin: ["plan","scheduled","complete","incomplete"]
+                                        }
+                                    },
+                                    {
+                                        $and: [
+                                            { status: "incomplete" },
+                                            { incompleteByReturningToOrigin: { $exists: false } }
+                                        ]
+                                    }
+                                ]
                             }
                         },
                         { $unwind: "$destination" },
@@ -261,13 +271,22 @@ exports.eventsWilconDev = (req, res) => {
                             onSite: [],
                             returning: [],
                             complete: [],
+                            incomplete: [],
                             completeInTransit: [],
+                            onSiteInTransit: [],
                         },
                         OBJECT = {
                             sortByKey: o => Object.keys(o).sort().reduce((r, k) => (r[k] = o[k], r), {}),
                             getKeyByValue: (o,v) => Object.keys(o).find(key => o[key] === v),
                         },
-                        childPromise = [];
+                        childPromise = [],
+                        validStatusBeforeUpdate = {
+                            queueingAtOrigin: ["in_transit","onSite","returning","complete","incomplete"],
+                            processingAtOrigin: ["in_transit","onSite","returning","complete","incomplete"],
+                            idlingAtOrigin: ["in_transit","onSite","returning","complete","incomplete"],
+                            in_transit: ["in_transit","onSite","returning","complete","incomplete"],
+                            onSite: ["onSite","returning","complete","incomplete"],
+                        };
                         
                         if(docs.length > 0){
                             saveVehicleLocation(function(){
@@ -299,16 +318,11 @@ exports.eventsWilconDev = (req, res) => {
                                         if(query.stage == "start" && doc.status == "assigned" && !hasEnteredOrigin && isOrigin === true){
                                             timestampToSave.entered_origin.push(doc._id);
                                             timestampEnteredOrigin = true;
-
-                                            // if(doc.status != "processingAtOrigin"){
-                                            //     _ids.processingAtOrigin.push(doc._id);
-                                            // } else {
-                                            //     timestampToSave.processingAtOrigin.push(doc._id);
-                                            // }
                                         } 
     
+                                        
                                         // queueing
-                                        if(getIndexOf(["Inside","Queueing"],"and") && isOrigin === true && !timestampEnteredOrigin && doc.status != "in_transit"){
+                                        if(getIndexOf(["Inside","Queueing"],"and") && isOrigin === true && !timestampEnteredOrigin && !validStatusBeforeUpdate.queueingAtOrigin.includes(doc.status)){
                                             if(doc.status != "queueingAtOrigin"){
                                                 _ids.queueingAtOrigin.push(doc._id);
                                             } else {
@@ -317,23 +331,25 @@ exports.eventsWilconDev = (req, res) => {
                                         }
     
                                         // processing
-                                        if(getIndexOf(["Inside","Processing"],"and") && isOrigin === true && !timestampEnteredOrigin && doc.status != "in_transit"){
+                                        if(getIndexOf(["Inside","Processing"],"and") && isOrigin === true && !timestampEnteredOrigin && !validStatusBeforeUpdate.processingAtOrigin.includes(doc.status)){
                                             if(doc.status != "processingAtOrigin"){
                                                 _ids.processingAtOrigin.push(doc._id);
                                             } else {
                                                 timestampToSave.processingAtOrigin.push(doc._id);
                                             }
                                         }
-                                        // // idling
-                                        // if(getIndexOf(["Inside","Idle"],"and") && isOrigin === true && !timestampEnteredOrigin && doc.status != "in_transit"){
-                                        //     if(doc.status != "idlingAtOrigin"){
-                                        //         _ids.idlingAtOrigin.push(doc._id);
-                                        //     } else {
-                                        //         timestampToSave.idlingAtOrigin.push(doc._id);
-                                        //     }
-                                        // }
+
+                                        // idling
+                                        if(getIndexOf(["Inside","Idle"],"and") && isOrigin === true && !timestampEnteredOrigin && !validStatusBeforeUpdate.idlingAtOrigin.includes(doc.status)){
+                                            if(doc.status != "idlingAtOrigin"){
+                                                _ids.idlingAtOrigin.push(doc._id);
+                                            } else {
+                                                timestampToSave.idlingAtOrigin.push(doc._id);
+                                            }
+                                        }
+
                                         // in transit
-                                        if(((query.RULE_NAME == "Inside Geofence" && query.stage == "end") || (query.RULE_NAME == "Outside Geofence" && query.stage == "start")) && doc.status != "in_transit" && isOrigin === true && !timestampEnteredOrigin){
+                                        if(((query.RULE_NAME == "Inside Geofence" && query.stage == "end") || (query.RULE_NAME == "Outside Geofence" && query.stage == "start")) && !validStatusBeforeUpdate.in_transit.includes(doc.status) && isOrigin === true && !timestampEnteredOrigin){
                                             _ids.in_transit.push(doc._id);
                                             dispatch[doc._id] = doc;
                                         }
@@ -342,8 +358,26 @@ exports.eventsWilconDev = (req, res) => {
         
                                         if(roundtrip == true){
                                             // onSite
-                                            if( !((query.RULE_NAME == "Inside Geofence" && query.stage == "start") || (query.RULE_NAME == "Outside Geofence" && query.stage == "start")) && doc.status == "in_transit" && isDestination === true){
-                                                _ids.onSite.push(doc._id);
+                                            if( !((query.RULE_NAME == "Inside Geofence" && query.stage == "start") || (query.RULE_NAME == "Outside Geofence" && query.stage == "start")) && isDestination === true){
+                                                if(doc.status == "in_transit"){
+                                                    _ids.onSite.push(doc._id);
+                                                } 
+                                                if(!validStatusBeforeUpdate.onSite.includes(doc.status)) {
+                                                    // check if processing/queueing time. if have, get last timestamp. make that the intransit time
+                                                    var sortedEventsCaptured = OBJECT.sortByKey(events_captured);
+                                                    var tempTimestamp;
+                                                    Object.keys(sortedEventsCaptured).forEach(key => {
+                                                        tempTimestamp = key;
+                                                    });
+                                                    if(tempTimestamp && ["queueingAtOrigin","processingAtOrigin"].includes(sortedEventsCaptured[tempTimestamp])){
+                                                        _ids.onSite.push(doc._id);
+                                                        timestampToSave.onSiteInTransit.push({
+                                                            _id: doc._id,
+                                                            obj: doc,
+                                                            timestamp: tempTimestamp
+                                                        });
+                                                    }
+                                                }
                                             }
                                             // end onSite
                                             
@@ -369,9 +403,14 @@ exports.eventsWilconDev = (req, res) => {
 
                                                     // give 20 minutes time difference in case an event was sent to WD just seconds after truck left the origin geofence.
                                                     if(minuteDifference > 20){
-                                                        _ids.incomplete.push(doc._id);
+                                                        // _ids.incomplete.push(doc._id);
+                                                        timestampToSave.incomplete.push(doc._id);
                                                     }
                                                 }
+                                            }
+                                            // if shipment is already Incomplete, just save the time when the truck returned to origin
+                                            if(query.RULE_NAME == "Inside Geofence" && isOrigin === true && !timestampEnteredOrigin && doc.status == "incomplete"){
+                                                timestampToSave.incomplete.push(doc._id);
                                             }
 
                                             // complete
@@ -431,10 +470,17 @@ exports.eventsWilconDev = (req, res) => {
                                 function saveTimestamp(){
                                     // will only save the events_captured. Status was not changed.
                                     Object.keys(timestampToSave).forEach(function(status) {
-                                        if(status != "completeInTransit"){
+                                        if(!["onSiteInTransit","completeInTransit"].includes(status)){
                                             if((timestampToSave[status]||[]).length > 0){
                                                 var set = {};
-                                                set[`events_captured.${moment(date).valueOf()}`] = status;
+
+                                                var tempStatus = status;
+                                                if(status == "incomplete"){
+                                                    tempStatus = "incompleteByReturningToOrigin";
+                                                    set[`incompleteByReturningToOrigin`] = true;
+                                                }
+
+                                                set[`events_captured.${moment(date).valueOf()}`] = tempStatus;
                                                 childPromise.push(dispatchCollection.updateMany({"_id": {$in: timestampToSave[status]}}, { $set: set, }));
                                             } else {
                                                 console.log(`None [${status}]`);
@@ -449,10 +495,17 @@ exports.eventsWilconDev = (req, res) => {
                                         if((_ids[status]||[]).length > 0){
                                             var set = {};
                                             if(!["entered_origin"].includes(status)){
-                                                // will only save the both new status and events_captured.
+                                                // will only save the new status and events_captured.
                                                 set["status"] = status;
-                                                set[`history.${moment(date).valueOf()}`] = `System - Status updated to '${status}'.`;
-                                                set[`events_captured.${moment(date).valueOf()}`] = status;
+
+                                                var tempStatus = status;
+                                                if(status == "incomplete"){
+                                                    tempStatus = "incompleteByReturningToOrigin";
+                                                    set[`incompleteByReturningToOrigin`] = true;
+                                                }
+                                                set[`history.${moment(date).valueOf()}`] = `System - Status updated to <status>${tempStatus}</status>.`;
+                                                set[`events_captured.${moment(date).valueOf()}`] = tempStatus;
+
                                                 childPromise.push(dispatchCollection.updateMany({"_id": {$in: _ids[status]}}, { $set: set, $unset: {escalation1: "",escalation2: "",escalation3: ""}}));
                                             }
     
@@ -478,11 +531,20 @@ exports.eventsWilconDev = (req, res) => {
                                                     childPromise.push(dispatchCollection.updateOne({ _id }, { $set: newSet }));
                                                 });
                                             }
-                                            if(status == "complete" && (timestampToSave.completeInTransit||[]).length > 0){
-                                                timestampToSave.completeInTransit.forEach(val => {
+                                            if((status == "complete" && (timestampToSave.completeInTransit||[]).length > 0) || 
+                                               (status == "onSite" && (timestampToSave.onSiteInTransit||[]).length > 0)){
+
+                                                var tempStatusInTransit = [];
+                                                if(status == "complete" && (timestampToSave.completeInTransit||[]).length > 0){
+                                                    tempStatusInTransit = timestampToSave.completeInTransit||[];
+                                                }
+                                                if(status == "onSite" && (timestampToSave.onSiteInTransit||[]).length > 0){
+                                                    tempStatusInTransit = timestampToSave.onSiteInTransit||[];
+                                                }
+                                                tempStatusInTransit.forEach(val => {
                                                     var newSet = {};
                                                     newSet[`events_captured.${val.timestamp}`] = "in_transit";
-                                                    set[`history.${val.timestamp}`] = `System - Status updated to 'in_transit'.`;
+                                                    set[`history.${val.timestamp}`] = `System - Status updated to <status>in_transit</status>.`;
     
                                                     var __date = new Date(Number(val.timestamp)),
                                                         obj = val.obj,
@@ -548,6 +610,7 @@ exports.eventsWilconDev = (req, res) => {
                             });
                         } else {
                             saveVehicleLocation(function(){
+                                console.log("No docs");
                                 client.close();
                                 res.status(200).send("OK");
                             });
