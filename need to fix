@@ -1,0 +1,13 @@
+moment
+ > timezone
+ > moment.tz(DATE, FORMAT, timezone)
+
+const instead of var if pwede
+
+make var functions into functions
+
+change areClientsDone to isDone
+
+check '500' status
+
+// database url (production)
