@@ -158,11 +158,19 @@ exports.scheduledPMSxDev = (req, res) => {
                                         }));
                                     });
     
-                                    // update this pms' next scheduled date, last scheduled date, and status
+                                    // update this pms' next scheduled date and last scheduled date, and status
                                     childPromise.push(pmsRequestsCollection.updateOne({_id: val._id}, {   
-                                        $set: { next_sc_date, last_sc_date, status: "ongoing" /*notified: true*/ }
+                                        $set: { next_sc_date, last_sc_date }
                                     })); 
                                 } 
+
+                                // if diffdays is 0 -- meaning schedule is today
+                                if(diffDays == 0){
+                                    // update this pms' status
+                                    childPromise.push(pmsRequestsCollection.updateOne({_id: val._id}, {   
+                                        $set: { status: "ongoing" }
+                                    })); 
+                                }
                             } 
                         });
                         if(childPromise.length > 0){

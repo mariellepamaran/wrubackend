@@ -21,7 +21,7 @@ const co = require('co');
 const mongodb = require('mongodb');
 const ObjectId = require('mongodb').ObjectID;
 const moment = require('moment-timezone');
-const request = require('request');
+const rp = require('request-promise');
 
 // PRODUCTION
 // const uri = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
@@ -39,7 +39,9 @@ exports.eventsCT1xDev_CICO = (req, res) => {
     // for production (value is TRUE), data will send to Coke API
     const sendToApi = false;
     // declare event urls
-    const cokeApi = "https://asfa-ccbp-lct-dev-01.azurewebsites.net/api/wruCICO?code=43pvyGcwlahcCBwaA/qNjKaTUt45dq63ahkElJQGtEzXnR03I6X1qA==";
+    const cokeApi = sendToApi ? 
+                    "https://asfa-ccbp-lct-dev-01.azurewebsites.net/api/wruCICO?code=43pvyGcwlahcCBwaA/qNjKaTUt45dq63ahkElJQGtEzXnR03I6X1qA==" :
+                    "https://asia-east2-secure-unison-275408.cloudfunctions.net/test_receiver?test=true";
 
     co(function*() {
         
@@ -72,7 +74,7 @@ exports.eventsCT1xDev_CICO = (req, res) => {
         console.log("Filtered:",`${query.GEOFENCE_NAME} - ${query.USER_NAME} (${query.USER_USERNAME})`);
         
         // initialize database
-        const dbName = "wd-coket1",
+        const dbName = "wd-coket1";
         const db = client.db(dbName);
         const dbLogging = client.db(`${dbName}-logging`);
         const geofencesCollection = db.collection('geofences');
@@ -148,118 +150,151 @@ exports.eventsCT1xDev_CICO = (req, res) => {
                         // get event where RULE_NAME is "Outside Geofence"
                         const eOutsideDoc = eDocs.find(x => x.RULE_NAME == "Outside Geofence") || {};
 
-                        // since it's sorted in descending order, the last geofence or index 0 should be the Outside Geofence
-                        // and index 1 should be the Inside Geofence. And take note that both should have the same Geofence Name
-                        if( getOriginalAddress(eInsideDoc.GEOFENCE_NAME) == getOriginalAddress(eOutsideDoc.GEOFENCE_NAME) &&
-                            (eDocs[0]||{}).RULE_NAME == "Outside Geofence" && (eDocs[1]||{}).RULE_NAME == "Inside Geofence" ){
 
-                            // get the geofence name without the extensions like - Queueing, Processing, or Idling
-                            const previousGeofenceName = getOriginalAddress(eInsideDoc.GEOFENCE_NAME);
+                        
+                        // get the geofence name without the extensions like - Queueing, Processing, or Idling
+                        const previousGeofenceName = getOriginalAddress(eInsideDoc.GEOFENCE_NAME);
 
-                            // array of shortnames
-                            const shortNames = [ currentGeofenceName, previousGeofenceName ];
+                        // array of shortnames
+                        const shortNames = [ currentGeofenceName, previousGeofenceName ];
 
-                            // retrieve geofence data of the shortnames in array
-                            geofencesCollection.find({ short_name: { $in: shortNames } }).toArray().then(gDocs => {
+                        // retrieve geofence data of the shortnames in array
+                        geofencesCollection.find({ short_name: { $in: shortNames } }).toArray().then(gDocs => {
 
-                                /******* Check-In */
-                                // get the duration from current time to startTime
-                                const checkInDuration = Math.abs(moment().diff(startTime, 'hours', true));
-                                // get the geofence data for current geofence
-                                const cGeofence = gDocs.find(x => x.short_name == currentGeofenceName) || {};
+                            /******* Check-In */
+                            // get the duration from current time to startTime
+                            const checkInDuration = Math.abs(now.diff(startTime, 'hours', true));
+                            // get the geofence data for current geofence
+                            const cGeofence = gDocs.find(x => x.short_name == currentGeofenceName) || {};
 
-                                // object to be sent to Coke
-                                const eventCheckIn = {
-                                    "Event Id": newObjectId || "",
-                                    "Event": "Check-In",
-                                    "Vehicle": query["USER_NAME"] || "",
-                                    "Check In Date": startTime.format("MM/DD/YYYY"),
-                                    "Check In Time": startTime.format("H:mm"),
-                                    "Check Out Date": "", // empty – Check Out Date is unknown
-                                    "Check Out Time": "", // empty – Check Out Time is unknown
-                                    "Duration": ROUND_OFF(checkInDuration,1) + " h",
-                                    "Site": currentGeofenceName,
-                                    "Site Code": cGeofence.code || "",
-                                    "Destination": "", // empty – Destination is unknown
-                                    "Destination Site Code": "", // empty – Destination Site Code is unknown
-                                    "Truck Status": query["Availability"] || "",
-                                    "Equipt No": query["Equipment Number"] || "",
-                                    "Event State": "Pending", // still Pending
-                                    "Truck Base Site": query["Base Site"] || "",
-                                    "Truck Base Site Code": query["Base Site Code"] || ""
-                                };
+                            // object to be sent to Coke
+                            const eventCheckIn = {
+                                "Event Id": newObjectId || "",
+                                "Event": "Check-In",
+                                "Vehicle": query["USER_NAME"] || "",
+                                "Check In Date": startTime.format("MM/DD/YYYY"),
+                                "Check In Time": startTime.format("H:mm"),
+                                "Check Out Date": "", // empty – Check Out Date is unknown
+                                "Check Out Time": "", // empty – Check Out Time is unknown
+                                "Duration": ROUND_OFF(checkInDuration,1) + " h",
+                                "Site": currentGeofenceName,
+                                "Site Code": cGeofence.code || "",
+                                "Destination": "", // empty – Destination is unknown
+                                "Destination Site Code": "", // empty – Destination Site Code is unknown
+                                "Truck Status": query["Availability"] || "",
+                                "Equipt No": query["Equipment Number"] || "",
+                                "Event State": "Pending", // still Pending
+                                "Truck Base Site": query["Base Site"] || "",
+                                "Truck Base Site Code": query["Base Site Code"] || ""
+                            };
+                            
+                            /******* On-Destination */
+                            // convert timstamps to moment
+                            const insideTimestamp = moment.tz(eInsideDoc.timestamp, undefined, timezone);
+                            const outsideTimestamp = moment.tz(eOutsideDoc.timestamp, undefined, timezone);
 
-                                
-                                /******* On-Destination */
-                                // get the duration from time inside the geofence to outside geofence
-                                const previousDuration = Math.abs(moment(eInsideDoc.timestamp).diff(moment(eOutsideDoc.timestamp), 'hours', true));
-                                // get the geofence data for previous geofence
-                                const pGeofence = gDocs.find(x => x.short_name == previousGeofenceName) || {};
+                            // get the duration from time inside the geofence to outside geofence
+                            const previousDuration = Math.abs(insideTimestamp.diff(outsideTimestamp, 'hours', true));
+                            // get the geofence data for previous geofence
+                            const pGeofence = gDocs.find(x => x.short_name == previousGeofenceName) || {};
 
-                                // object to be sent to Coke
-                                const eventOnDestination = {
-                                    "Event Id": eInsideDoc["Event Id"] || "",
-                                    "Event": "On-Destination",
-                                    "Vehicle": query["USER_NAME"] || "",
-                                    "Check In Date": moment(eInsideDoc.timestamp).format("MM/DD/YYYY"),
-                                    "Check In Time": moment(eInsideDoc.timestamp).format("H:mm"),
-                                    "Check Out Date": moment(eOutsideDoc.timestamp).format("MM/DD/YYYY"), // Check Out Date is filled
-                                    "Check Out Time":  moment(eOutsideDoc.timestamp).format("H:mm"), // Check Out Time is filled
-                                    "Duration": ROUND_OFF(previousDuration,1) + " h", // Duration is updated
-                                    "Site": previousGeofenceName,
-                                    "Site Code": pGeofence.code || "",
-                                    "Destination": currentGeofenceName, // Destination is filled
-                                    "Destination Site Code": cGeofence.code || "", // Destination Site Code is filled
-                                    "Truck Status": query["Availability"] || "",
-                                    "Equipt No": query["Equipment Number"] || "",
-                                    "Event State": "Finished",
-                                    "Truck Base Site": query["Base Site"] || "",
-                                    "Truck Base Site Code": query["Base Site Code"] || ""
-                                };
+                            // object to be sent to Coke
+                            const eventOnDestination = {
+                                "Event Id": eInsideDoc["Event Id"] || "",
+                                "Event": "On-Destination",
+                                "Vehicle": query["USER_NAME"] || "",
+                                "Check In Date": insideTimestamp.format("MM/DD/YYYY"),
+                                "Check In Time": insideTimestamp.format("H:mm"),
+                                "Check Out Date": outsideTimestamp.format("MM/DD/YYYY"), // Check Out Date is filled
+                                "Check Out Time":  outsideTimestamp.format("H:mm"), // Check Out Time is filled
+                                "Duration": ROUND_OFF(previousDuration,1) + " h", // Duration is updated
+                                "Site": previousGeofenceName,
+                                "Site Code": pGeofence.code || "",
+                                "Destination": currentGeofenceName, // Destination is filled
+                                "Destination Site Code": cGeofence.code || "", // Destination Site Code is filled
+                                "Truck Status": query["Availability"] || "",
+                                "Equipt No": query["Equipment Number"] || "",
+                                "Event State": "Finished",
+                                "Truck Base Site": query["Base Site"] || "",
+                                "Truck Base Site Code": query["Base Site Code"] || ""
+                            };
 
-                                // check if this function is supposed to send the data to Coke
-                                if(sendToApi){
+                            
+                            // print data for debugging
+                            console.log("DONE (eventCheckIn)",JSON.stringify(eventCheckIn));
+
+                            // >>> CHECK-IN PUSH TO ARRAY
+                            // convert object to url parameter string
+                            var queryParams = Object.keys(eventCheckIn).map(k => `${encodeURIComponent(k)}=${encodeURIComponent(eventCheckIn[k])}`).join('&');
+                            // add promise to array -- send event (Check-In) to third-party API
+                            childPromise.push(rp({
+                                uri: `${cokeApi}&${queryParams}`,
+                                headers: {
+                                    'User-Agent': 'Request-Promise'
+                                },
+                                json: true // Automatically parses the JSON string in the response
+                            }));
+
+
+                            // since it's sorted in descending order, the last geofence or index 0 should be the Outside Geofence
+                            // and index 1 should be the Inside Geofence. And take note that both should have the same Geofence Name
+                            if( getOriginalAddress(eInsideDoc.GEOFENCE_NAME) == getOriginalAddress(eOutsideDoc.GEOFENCE_NAME) &&
+                                (eDocs[0]||{}).RULE_NAME == "Outside Geofence" && (eDocs[1]||{}).RULE_NAME == "Inside Geofence" ){
+
+                                // if the 'eInsideDoc' has an Event Id, send the destination event
+                                if(eInsideDoc["Event Id"]){
                                     // print data for debugging
-                                    console.log("DONE (eventCheckIn)",JSON.stringify(eventCheckIn));
-
-                                    // convert object to url parameter string
-                                    var queryParams = Object.keys(eventCheckIn).map(k => `${encodeURIComponent(k)}=${encodeURIComponent(eventCheckIn[k])}`).join('&');
-                                    // add promise to array -- send event (Check-In) to third-party API
-                                    childPromise.push(request.get(`${cokeApi}&${queryParams}`));
-
-                                    // if the 'eInsideDoc' has an Event Id, send the destination event
-                                    if(eInsideDoc["Event Id"]){
-                                        // print data for debugging
-                                        console.log("DONE (eventOnDestination)",JSON.stringify(eventOnDestination));
-                                        
-                                        // convert object to url parameter string
-                                        var queryParams = Object.keys(eventOnDestination).map(k => `${encodeURIComponent(k)}=${encodeURIComponent(eventOnDestination[k])}`).join('&');
-                                        // add promise to array -- send event (On-Destination) to third-party API
-                                        childPromise.push(request.get(`${cokeApi}&${queryParams}`));
-                                    }
-
-                                    // promise
-                                    Promise.all(childPromise).then(result => {
-                                        isDone();
-                                    }).catch(error => {
-                                        isDone("Promise (check-in & on-destination)",error);
-                                    });
-                                } else {
-                                    // print data for debugging
-                                    console.log("DONE (eventCheckIn)",JSON.stringify(eventCheckIn));
                                     console.log("DONE (eventOnDestination)",JSON.stringify(eventOnDestination));
-                                    isDone();
+                                    
+                                    // >>> ON-DESTINATION PUSH TO ARRAY
+                                    // convert object to url parameter string
+                                    var queryParams = Object.keys(eventOnDestination).map(k => `${encodeURIComponent(k)}=${encodeURIComponent(eventOnDestination[k])}`).join('&');
+                                    // add promise to array -- send event (On-Destination) to third-party API
+                                    childPromise.push(rp({
+                                        uri: `${cokeApi}&${queryParams}`,
+                                        headers: {
+                                            'User-Agent': 'Request-Promise'
+                                        },
+                                        json: true // Automatically parses the JSON string in the response
+                                    }));
                                 }
-                            }).catch(error => {
-                                isDone("Geofence (find)",error);
-                            });
-                        } else {
-                            isDone("sort/order",eDocs);
-                        }
+                            
+                            } 
+                            
+                            // if there's at least one promise pushed, then execute promise
+                            if(childPromise.length > 0){
+                                // promise
+                                Promise.all(childPromise).then(result => {
+                                    // print for debug
+                                    console.log("Result",result);
+
+                                    // for debugging purposes
+                                    result.forEach(val => {
+                                        if(val.ok == 1){
+                                            console.log("Success| ",
+                                                        "Event Id: " + val.eventId,
+                                                        "Event Type: " + val.event,
+                                                        "Time: " + now.format("MM/DD/YYYY, hh:mm:ss A"));
+                                        }
+                                        if(val.error == 1){
+                                            console.log("Error| ",
+                                                        "Error Message: " + val.message,
+                                                        "Time: " + now.format("MM/DD/YYYY, hh:mm:ss A"));
+                                        }
+                                    });
+                                    isDone();
+                                }).catch(error => {
+                                    isDone("Promise (check-in & on-destination)",error);
+                                });
+                            } else {
+                                isDone("sort/order",eDocs);
+                            }
+                        }).catch(error => {
+                            isDone("Geofence (find)",error);
+                        });
                     }).catch(error => {
                         isDone("Events (find)",error);
                     });
-                    
                 }
 
                 // if Outside Geofence
@@ -288,8 +323,11 @@ exports.eventsCT1xDev_CICO = (req, res) => {
                             geofencesCollection.find({ short_name: currentGeofenceName }).toArray().then(gDocs => {
 
                                 /******* Check-Out */
+                                // convert timstamps to moment
+                                const insideTimestamp = moment.tz(eInsideDoc.timestamp, undefined, timezone);
+
                                 // get the duration from time inside the geofence to current time (outside geofence)
-                                const checkOutDuration = Math.abs(moment(eInsideDoc.timestamp).diff(eventTime, 'hours', true));
+                                const checkOutDuration = Math.abs(insideTimestamp.diff(eventTime, 'hours', true));
                                 // get the geofence data for current geofence
                                 const cGeofence = gDocs.find(x => x.short_name == currentGeofenceName) || {};
                                 
@@ -298,8 +336,8 @@ exports.eventsCT1xDev_CICO = (req, res) => {
                                     "Event Id": eInsideDoc["Event Id"] || "",
                                     "Event": "Check-Out",
                                     "Vehicle": query["USER_NAME"] || "",
-                                    "Check In Date": moment(eInsideDoc.timestamp).format("MM/DD/YYYY"),
-                                    "Check In Time": moment(eInsideDoc.timestamp).format("H:mm"),
+                                    "Check In Date": insideTimestamp.format("MM/DD/YYYY"),
+                                    "Check In Time": insideTimestamp.format("H:mm"),
                                     "Check Out Date": eventTime.format("MM/DD/YYYY"),
                                     "Check Out Time": eventTime.format("H:mm"),
                                     "Duration": ROUND_OFF(checkOutDuration,1) + " h",
@@ -317,15 +355,41 @@ exports.eventsCT1xDev_CICO = (req, res) => {
                                 if(eInsideDoc["Event Id"]){
                                     // send event to third-party API
                                     console.log("DONE (eventCheckOut)",JSON.stringify(eventCheckOut));
-                                    if(sendToApi){
-                                        var queryParams = Object.keys(eventCheckOut).map(k => `${encodeURIComponent(k)}=${encodeURIComponent(eventCheckOut[k])}`).join('&');
-                                        childPromise.push(request.get(`${cokeApi}&${queryParams}`));
-                                    }
+                                    
+                                    
+                                    // >>> CHECK-OUT PUSH TO ARRAY
+                                    // convert object to url parameter string
+                                    const queryParams = Object.keys(eventCheckOut).map(k => `${encodeURIComponent(k)}=${encodeURIComponent(eventCheckOut[k])}`).join('&');
+                                    // add promise to array -- send event (Check-Out) to third-party API
+                                    childPromise.push(rp({
+                                        uri: `${cokeApi}&${queryParams}`,
+                                        headers: {
+                                            'User-Agent': 'Request-Promise'
+                                        },
+                                        json: true // Automatically parses the JSON string in the response
+                                    }));
 
                                     // save "Event Id" of current event same as the last Inside Geofence event.
                                     childPromise.push(eventsCollection.updateOne({ _id: ObjectId(insertedId) }, { $set: { "Event Id": eInsideDoc["Event Id"] } }));
 
                                     Promise.all(childPromise).then(result => {
+                                        // print for debug
+                                        console.log("Result",result);
+
+                                        // for debugging purposes
+                                        result.forEach(val => {
+                                            if(val.ok == 1){
+                                                console.log("Success| ",
+                                                            "Event Id: " + val.eventId,
+                                                            "Event Type: " + val.event,
+                                                            "Time: " + now.format("MM/DD/YYYY, hh:mm:ss A"));
+                                            }
+                                            if(val.error == 1){
+                                                console.log("Error| ",
+                                                            "Error Message: " + val.message,
+                                                            "Time: " + now.format("MM/DD/YYYY, hh:mm:ss A"));
+                                            }
+                                        });
                                         isDone();
                                     }).catch(error => {
                                         isDone("Promise (check-out)",error);

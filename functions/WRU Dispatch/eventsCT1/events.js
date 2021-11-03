@@ -124,20 +124,20 @@ exports.events = (req, res) => {
                 }
 
                 // Call CICO function
-                try {
-                    // add 'insertedId' to query to send to CICO function
-                    req.query.insertedId = insertedId;
-                    // add 'newObjectId' to query to send to CICO function
-                    req.query.newObjectId = newObjectId;
-                    // convert object to url parameter string
-                    const queryString = Object.keys(req.query).map(key => key + '=' + req.query[key]).join('&');
-                    request({
-                        method: 'GET',
-                        url: `${eventCICOURL}?${queryString}`,
-                    });
-                } catch (error){
-                    console.log("Request Error",error);
-                }
+                // try {
+                //     // add 'insertedId' to query to send to CICO function
+                //     req.query.insertedId = insertedId;
+                //     // add 'newObjectId' to query to send to CICO function
+                //     req.query.newObjectId = newObjectId;
+                //     // convert object to url parameter string
+                //     const queryString = Object.keys(req.query).map(key => key + '=' + req.query[key]).join('&');
+                //     request({
+                //         method: 'GET',
+                //         url: `${eventCICOURL}?${queryString}`,
+                //     });
+                // } catch (error){
+                //     console.log("Request Error",error);
+                // }
 
                 // close the mongodb client connection
                 client.close();

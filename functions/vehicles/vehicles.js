@@ -179,7 +179,19 @@ exports.vehicles = (req, res) => {
                                             const acceptedKeys = CLIENT_OPTIONS[clientName].customfields;
                                             
                                             // set the fields of the vehicle which will be updated
-                                            const set = { username: val.username, name: val.name };
+                                            const set = { 
+                                                username: val.username, 
+                                                name: val.name,
+                                                devices: []
+                                            };
+
+                                            // save device Id and IMEI
+                                            (val.devices||[]).forEach(dVal => {
+                                                set.devices.push({
+                                                    id: dVal.id,
+                                                    imei: dVal.imei
+                                                });
+                                            });
 
                                             // only set/save the accepted custom fields
                                             customField.forEach(item => {
@@ -201,6 +213,7 @@ exports.vehicles = (req, res) => {
                                                     // check if original value is NOT the same as new value
                                                     if(vDoc.name != val.name) hasChanges = true;
                                                     if(vDoc.username != val.username) hasChanges = true;
+                                                    if(JSON.stringify(vDoc.devices) != JSON.stringify(val.devices)) hasChanges = true;
 
                                                     // loop vehicle's custom fields
                                                     customField.forEach(item => {

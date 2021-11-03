@@ -21,7 +21,7 @@ const moment = require('moment-timezone');
 const uri = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
 
 exports.expireSessionTokenxDev = (req, res) => {
-    // set the response HTTP header
+    // set the response HTTP header2
     res.set('Content-Type','application/json');
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Headers', '*');
