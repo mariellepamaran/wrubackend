@@ -163,7 +163,7 @@ exports.pushReportToLCTxDev = (req, res) => {
             
                     return Promise.all(attachments);
                 }).then(function (attachments) {
-                    console.log(attachments);
+                    // console.log(JSON.stringify(attachments));
 
                     const csvAttachments = [];
 
