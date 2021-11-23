@@ -127,21 +127,21 @@ exports.orderUpdatexDev = (req, res) => {
                             Object.keys(doc.category||{}).forEach(key => {
     
                                 // loop through parts array of each category
-                                (doc.category[key].parts||[]).forEach((val,i) => {
+                                Object.keys(doc.category[key].parts||{}).forEach(line_id => {
     
                                     // check if part's line id is equal to param's line id
-                                    if(val.line_id == query.line_id){
+                                    if(line_id == query.line_id){
     
                                         // check if no data has been added yet (just extra checking). Line ID is usually unique
                                         if(Object.keys(set).length == 0){
                                             
                                             // only add data to "set" is query params exists
-                                            (query.plan_order) ? set[`category.${key}.parts.${i}.plan_order`] = query.plan_order : null;
-                                            (query.status) ? set[`category.${key}.parts.${i}.status`] = query.status : null;
-                                            (query.po_number) ? set[`category.${key}.parts.${i}.po_number`] = query.po_number : null;
-                                            (query.order_number) ? set[`category.${key}.parts.${i}.order_number`] = query.order_number : null;
-                                            (query.withdrawal_number) ? set[`category.${key}.parts.${i}.withdrawal_number`] = query.withdrawal_number : null;
-                                            (query.supplier_code) ? set[`category.${key}.parts.${i}.supplier_code`] = query.supplier_code : null;
+                                            (query.plan_order) ? set[`category.${key}.parts.${line_id}.plan_order`] = query.plan_order : null;
+                                            (query.status) ? set[`category.${key}.parts.${line_id}.status`] = query.status : null;
+                                            (query.po_number) ? set[`category.${key}.parts.${line_id}.po_number`] = query.po_number : null;
+                                            (query.order_number) ? set[`category.${key}.parts.${line_id}.order_number`] = query.order_number : null;
+                                            (query.withdrawal_number) ? set[`category.${key}.parts.${line_id}.withdrawal_number`] = query.withdrawal_number : null;
+                                            (query.supplier_code) ? set[`category.${key}.parts.${line_id}.supplier_code`] = query.supplier_code : null;
                                         }
                                     }
                                 });
@@ -160,21 +160,21 @@ exports.orderUpdatexDev = (req, res) => {
                             */
 
                             // loop through parts array of each category
-                            (doc.parts||[]).forEach((val,i) => {
+                                Object.keys(doc.category[key].parts||{}).forEach(line_id => {
 
                                 // check if part's line id is equal to param's line id
-                                if(val.line_id == query.line_id){
+                                if(line_id == query.line_id){
 
                                     // check if no data has been added yet (just extra checking). Line ID is usually unique
                                     if(Object.keys(set).length == 0){
                                         
                                         // only add data to "set" is query params exists
-                                        (query.plan_order) ? set[`parts.${i}.plan_order`] = query.plan_order : null;
-                                        (query.status) ? set[`parts.${i}.status`] = query.status : null;
-                                        (query.po_number) ? set[`parts.${i}.po_number`] = query.po_number : null;
-                                        (query.order_number) ? set[`parts.${i}.order_number`] = query.order_number : null;
-                                        (query.withdrawal_number) ? set[`parts.${i}.withdrawal_number`] = query.withdrawal_number : null;
-                                        (query.supplier_code) ? set[`parts.${i}.supplier_code`] = query.supplier_code : null;
+                                        (query.plan_order) ? set[`parts.${line_id}.plan_order`] = query.plan_order : null;
+                                        (query.status) ? set[`parts.${line_id}.status`] = query.status : null;
+                                        (query.po_number) ? set[`parts.${line_id}.po_number`] = query.po_number : null;
+                                        (query.order_number) ? set[`parts.${line_id}.order_number`] = query.order_number : null;
+                                        (query.withdrawal_number) ? set[`parts.${line_id}.withdrawal_number`] = query.withdrawal_number : null;
+                                        (query.supplier_code) ? set[`parts.${line_id}.supplier_code`] = query.supplier_code : null;
                                     }
                                 }
                             });

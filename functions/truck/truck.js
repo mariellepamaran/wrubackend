@@ -96,6 +96,42 @@ exports.truck = (req, res) => {
                         message: "Missing query parameter/s."
                     });
                 }
+            } else if(['All'].includes(identifier)){
+                // initialize mongoDb Client
+                const client = yield mongodb.MongoClient.connect(uri,{ useUnifiedTopology: true });
+        
+                // initialize database
+                const db = client.db(clientName);
+                const vehiclesCollection = db.collection('vehicles');
+            
+                // retrieve all vehicles
+                vehiclesCollection.find({}).toArray().then(docs => {
+
+                    const vehiclesArr = [];
+
+                    // loop returned vehicle list
+                    docs.forEach(val => {
+
+                        // get the IMEI of devices
+                        const device = (val.devices||[])[0] || {};
+                        
+                        // push data to array
+                        vehiclesArr.push({
+                            "id": val._id,
+                            "Plate Number": val["Plate Number"] || val["name"],
+                            "Device ID": device.id || "",
+                            "IMEI": device.imei || "",
+                        });
+                    });
+
+                    // close the mongodb client connection
+                    client.close();
+                    // return success status and data needed by Sir Binky
+                    res.status(200).send({
+                        ok: 1,
+                        data: vehiclesArr
+                    });
+                });
             } else {
                 // return error with message
                 res.status(500).send({

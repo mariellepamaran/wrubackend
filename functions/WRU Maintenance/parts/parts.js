@@ -77,6 +77,7 @@ exports.parts = (req, res) => {
                 /*
                     Company Code
                     Item Number
+                    Item Name
                     Qty
                     SRP
                     Brand Code
@@ -85,12 +86,26 @@ exports.parts = (req, res) => {
                     Last Withdraw Date
                 */
 
+                    
+                // {
+                //     "token":"zV8M2z81pPxhPJelifnz9tjmhwS9eSFIMelE",
+                //     "company_code":"110",
+                //     "item_number":"186300000001",
+                //     "qty":"10",
+                //     "srp":"49",
+                //     "brand_code":"G1001556",
+                //     "supplier_code":"VICT02",
+                //     "last_received_date":"",
+                //     "last_withdraw_date":""
+                // }
+
                 // object to be saved to the db
                 const obj = {
                     company_code: query.company_code,
-                    // item_number: query.item_number,
+                    part_name: query.item_name,
                     qty: query.qty,
                     srp: query.srp,
+                    brand: query.brand_name,
                     brand_code: query.brand_code,
                     supplier_code: query.supplier_code,
                     last_received_date: query.last_received_date,

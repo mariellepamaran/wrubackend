@@ -236,7 +236,7 @@ exports.eventsCT2xDev_Shipments = (req, res) => {
 
                 // store dispatch _ids
                 const _ids = {
-                    dispatched: [],
+                    assigned: [],
                     onDelivery: [],
                     complete: []
                 };
@@ -280,15 +280,15 @@ exports.eventsCT2xDev_Shipments = (req, res) => {
                                         `isTruckBaseSite: ${isTruckBaseSite}`);
 
                             // Status logic is based on Coke's T2_Dispatch_Matrix.xlsx file
-                            // dispatched
-                            if(arrivedAtGeofence && doc.status == "assigned" && isOrigin === true){
-                                _ids.dispatched.push(doc._id);
-                            }
-                            // end dispatched
+                            // // assigned
+                            // if(arrivedAtGeofence && doc.status != "assigned" && isOrigin === true){
+                            //     _ids.assigned.push(doc._id);
+                            // }
+                            // // end assigned
 
 
                             // onDelivery
-                            if(leftGeofence && ["dispatched"].includes(doc.status) && isOrigin === true){
+                            if(leftGeofence && ["assigned"].includes(doc.status) && isOrigin === true){
                                 _ids.onDelivery.push(doc._id);
                             }
                             // end onDelivery
@@ -310,7 +310,7 @@ exports.eventsCT2xDev_Shipments = (req, res) => {
                         }
     
                         // merge all entry IDs
-                        const shipment_number = _ids.onDelivery.concat(_ids.dispatched).concat(_ids.complete);
+                        const shipment_number = _ids.onDelivery.concat(_ids.assigned).concat(_ids.complete);
     
                         if(shipment_number.length > 0){
                             // if 'insertedId' is not null or undefined
