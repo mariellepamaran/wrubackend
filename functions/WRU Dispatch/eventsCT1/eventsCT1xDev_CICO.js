@@ -41,7 +41,7 @@ exports.eventsCT1xDev_CICO = (req, res) => {
     // declare event urls
     const cokeApi = sendToApi ? 
                     "https://asfa-ccbp-lct-dev-01.azurewebsites.net/api/wruCICO?code=43pvyGcwlahcCBwaA/qNjKaTUt45dq63ahkElJQGtEzXnR03I6X1qA==" :
-                    "https://asia-east2-secure-unison-275408.cloudfunctions.net/test_receiver?test=true";
+                    "https://asia-east2-secure-unison-275408.cloudfunctions.net/testReceiver?test=true";
 
     co(function*() {
         

@@ -1,0 +1,11 @@
+
+
+Install dependencies
+> cd functions           ------------> Note: directory in terminal should be like "....\wrubackend\functions". Install dependencies inside "functions" folder's "node_modules"
+> npm i <DEPENDENCY>
+
+Test functions locally
+> firebase serve
+
+Deploy functions
+> firebase deploy --only functions:<FUNCTION_NAME>
