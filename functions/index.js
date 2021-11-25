@@ -1,189 +1,230 @@
 
- const functions = require('firebase-functions');
- const co = require('co');
- const imaps = require('imap-simple');
- const config = {
-     imap: {
-         user: 'wru.developer@gmail.com',
-         password: 'IamWRUCorp',
-         host: 'imap.gmail.com',
-         port: 993,
-         tls: true,
-         authTimeout: 30000,
-         tlsOptions: { 
-             rejectUnauthorized: false
-         }
-     }
- };
+const co = require('co');
+const mongodb = require('mongodb');
+const moment = require('moment-timezone');
+const functions = require('firebase-functions');
 
- exports.test = functions.https.onRequest((req, res) => {
+// PRODUCTION
+// const uri = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+// DEVELOPMENT
+const uri = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
+
+exports.test = functions.https.onRequest((req, res) => {
     co(function*() {
-
-        /************** Functions **************/
-        function connectToImap(){
-
-            // reference: https://www.npmjs.com/package/imap-simple
-
-            // connect imap
-            imaps.connect(config).then(function (connection) {
-
-                // open inbox
-                connection.openBox('INBOX').then(function () {
-            
-                    // Fetch emails from the last 24h
-                    const delay = 24 * 3600 * 1000;
-
-                    var yesterday = new Date();
-                        yesterday.setTime(Date.now() - delay);
-                    yesterday = yesterday.toISOString();
-
-                    const searchCriteria = ['UNSEEN', ['SINCE', yesterday]];
-                    const fetchOptions = { bodies: ['HEADER.FIELDS (FROM TO SUBJECT DATE)'], struct: true };
-            
-                    // retrieve only the headers of the messages
-                    return connection.search(searchCriteria, fetchOptions);
-                }).then(function (messages) {
-            
-                    var attachments = [];
-            
-                    // loop messages
-                    messages.forEach(function (message) {
-                        const parts = imaps.getParts(message.attributes.struct);
-                        attachments = attachments.concat(parts.filter(function (part) {
-                            return part.disposition && part.disposition.type.toUpperCase() === 'ATTACHMENT';
-                        }).map(function (part) {
-                            // retrieve the attachments only of the messages with attachments
-                            return connection.getPartData(message, part)
-                                .then(function (partData) {
-                                    // Original
-                                    // <Buffer ef bb bf 54 69 74 6c 65 2c 44 65 73 63 72 69 70 74 69 6f 6e 0d 0a 54 65 73 74 2c 49 20 61 6d 20 61 20 74 65 73 74 0d 0a>
         
-                                    // Convert buffer to utf-8 string
-                                    // Output: 'Title,Description\r\nTest,I am a test\r\n'
-                                    const csv = partData.toString('utf8');
-        
-                                    // Convert the data to String and
-                                    // split it in an array
-                                    var array = csv.split("\r\n");
-                                    
-                                    // All the rows of the CSV will be
-                                    // converted to JSON objects which
-                                    // will be added to result in an array
-                                    let result = [];
+        /************** Variable Initialization **************/
+        // request data
+        const method = req.method;
+        const body = req.body;
+        const query = req.query;
 
-                                    // define row indexes
-                                    const headerRowIndex = 1; // Header is 2nd row
-                                    const dataStartIndex = 2; // index of row to check data
-                                    
-                                    // The array[0] contains all the
-                                    // header columns so we store them
-                                    // in headers array
-                                    let headers = array[headerRowIndex].split(",")
-                                    
-                                    // Since headers are separated, we
-                                    // need to traverse remaining n-1 rows.
-                                    for (let i = dataStartIndex; i < array.length - 1; i++) {
-                                        let obj = {}
-                                        
-                                        // Create an empty object to later add
-                                        // values of the current row to it
-                                        // Declare string str as current array
-                                        // value to change the delimiter and
-                                        // store the generated string in a new
-                                        // string s
-                                        let str = array[i]
-                                        let s = ''
-                                        
-                                        // By Default, we get the comma separated
-                                        // values of a cell in quotes " " so we
-                                        // use flag to keep track of quotes and
-                                        // split the string accordingly
-                                        // If we encounter opening quote (")
-                                        // then we keep commas as it is otherwise
-                                        // we replace them with pipe |
-                                        // We keep adding the characters we
-                                        // traverse to a String s
-                                        let flag = 0
-                                        for (let ch of str) {
-                                            if (ch === '"' && flag === 0) {
-                                            flag = 1
-                                            }
-                                            else if (ch === '"' && flag == 1) flag = 0
-                                            if (ch === ',' && flag === 0) ch = '|'
-                                            if (ch !== '"') s += ch
-                                        }
-                                        
-                                        // Split the string using pipe delimiter |
-                                        // and store the values in a properties array
-                                        let properties = s.split("|")
-                                        
-                                        // For each header, if the value contains
-                                        // multiple comma separated data, then we
-                                        // store it in the form of array otherwise
-                                        // directly the value is stored
-                                        for (let j in headers) {
-                                            // if (properties[j].includes(",")) {
-                                            // obj[headers[j]] = properties[j]
-                                            //     .split(",").map(item => item.trim())
-                                            // }
-                                            // else obj[headers[j]] = properties[j]
-                                            obj[headers[j]] = properties[j]
-                                        }
-                                        
-                                        // Add the generated object to our
-                                        // result array
-                                        result.push(obj)
-                                    }
+        // print request data
+        console.log("Method:",method);
+        console.log("Body:",JSON.stringify(body));
+        console.log("Query:",JSON.stringify(query));
+
         
-                                    return {
-                                        filename: ((part.disposition||{}).params||{}).filename || (part.params||{}).name,
-                                        data: result
-                                    };
-                                }).catch(error => {
-                                    console.log(error);
-                                    res.json({error:1, message: error});
-                                });
-                        }));
-                    });
+        // initialize timezone and date formats
+        const timezone = "Asia/Manila";
+        const format = {
+            date: "MMM DD, YYYY",
+            time: "h:mm A",
+            datetime: "MMM DD, YYYY, h:mm A"
+        };
+        const now = moment.tz(undefined, undefined, timezone); // get current time
+
+        // initialize mongoDb Client
+        const client = yield mongodb.MongoClient.connect(uri, { useUnifiedTopology: true });
+
+        // list of clients. Key is usually the db name
+        const CLIENT_OPTIONS = {
+            // 36-digit
+            "zV8M2z81pPxhPJelifnz9tjmhwS9eSFIMelE": { clientName: "wm-wilcon" }
+        };
+
+        var hasError = false; // check if there were error/s during process(). 
+                              // the reason for this is to send status 500 after all CLIENTS are done 
+                              // instead of returning error immediately while other CLIENTS (if available) 
+                              // have not yet undergone through process().
+        /************** end Variable Initialization **************/
+
+
+        /************** Universal Functions **************/
+
+        // a function that checks if an array(arr) contains all values from another array(target)
+        const checker = (arr, target) => target.every(v => arr.includes(v));
+
+        /************** end Universal Functions **************/
+
+        
+        /************** Process **************/
+        // check if token passed is valid
+        if(CLIENT_OPTIONS[query.token]){
+
+            const requiredParams = ["service_type","service_id","line_id"];
             
-                    return Promise.all(attachments);
-                }).then(function (attachments) {
-                    // console.log(JSON.stringify(attachments));
+            // if client sent all required parameters
+            if(checker(Object.keys(query),requiredParams)){
 
-                    const csvAttachments = [];
-
-                    // check if file is CSV based on filename
-                    attachments.forEach(val => {
-
-                        // get file extension
-                        const ext = (val.filename||"").split('.').pop().toLowerCase();
-
-                        // check if CSV and push to array
-                        if(ext == 'csv'){
-                            csvAttachments.push(val);
-                        }
-                    });
+                // initialize database
+                const clientName = CLIENT_OPTIONS[query.token].clientName;
+                const db = client.db(clientName);
+                const serviceCollection = (query.service_type == "pms") ? "pms_requests" : query.service_type;
+                const unknownCollection = db.collection(serviceCollection);
 
                 
-                    /** #2 and #3 here */
+                /*
+                    Parameters expected/required:
+                       > Service Type (SR/PMS)
+                       > Service ID
 
+                       > Line ID
 
-                    res.json({
-                        ok:1, 
-                        attachments: csvAttachments 
-                    });
+                       > Plan Order
+                       > Status
+                       > PO Number
+                       > Order Number
+                       > Withdrawal Number
+                       > Supplier Code
+                */
+
+                unknownCollection.find({ _id: query.service_id }).toArray().then(docs => {
+                    const doc = docs[0];
+
+                    if(doc){
+
+                        // object to be updated to the db
+                        const set = {};
+
+                        // **SR**
+                        if(query.service_type == "sr"){
+                            
+                            /*
+                                DB Structure for SR
+                                    > _id
+                                    > category
+                                        > UNKNOWN_CATEGORY
+                                            > parts
+                                                > <ARRAY>
+                                                    > line_id
+                            */
+
+                            // loop each category
+                            Object.keys(doc.category||{}).forEach(key => {
+    
+                                // loop through parts array of each category
+                                Object.keys(doc.category[key].parts||{}).forEach(line_id => {
+    
+                                    // check if part's line id is equal to param's line id
+                                    if(line_id == query.line_id){
+    
+                                        // check if no data has been added yet (just extra checking). Line ID is usually unique
+                                        if(Object.keys(set).length == 0){
+                                            
+                                            // only add data to "set" is query params exists
+                                            (![null,undefined].includes(query.plan_order)) ? set[`category.${key}.parts.${line_id}.plan_order`] = query.plan_order : null;
+                                            (![null,undefined].includes(query.status)) ? set[`category.${key}.parts.${line_id}.status`] = query.status : null;
+                                            (![null,undefined].includes(query.po_number)) ? set[`category.${key}.parts.${line_id}.po_number`] = query.po_number : null;
+                                            (![null,undefined].includes(query.order_number)) ? set[`category.${key}.parts.${line_id}.order_number`] = query.order_number : null;
+                                            (![null,undefined].includes(query.withdrawal_number)) ? set[`category.${key}.parts.${line_id}.withdrawal_number`] = query.withdrawal_number : null;
+                                            (![null,undefined].includes(query.supplier_code)) ? set[`category.${key}.parts.${line_id}.supplier_code`] = query.supplier_code : null;
+                                        }
+                                    }
+                                });
+                            });
+                        }
+                        
+                        // **PMS**
+                        if(query.service_type == "pms"){
+                            
+                            /*
+                                DB Structure for PMS
+                                    > _id
+                                    > parts
+                                        > <ARRAY>
+                                            > line_id
+                            */
+
+                            // loop through parts array of each category
+                                Object.keys(doc.category[key].parts||{}).forEach(line_id => {
+
+                                // check if part's line id is equal to param's line id
+                                if(line_id == query.line_id){
+
+                                    // check if no data has been added yet (just extra checking). Line ID is usually unique
+                                    if(Object.keys(set).length == 0){
+                                        
+                                        // only add data to "set" is query params exists
+                                        (![null,undefined].includes(query.plan_order)) ? set[`parts.${line_id}.plan_order`] = query.plan_order : null;
+                                        (![null,undefined].includes(query.status)) ? set[`parts.${line_id}.status`] = query.status : null;
+                                        (![null,undefined].includes(query.po_number)) ? set[`parts.${line_id}.po_number`] = query.po_number : null;
+                                        (![null,undefined].includes(query.order_number)) ? set[`parts.${line_id}.order_number`] = query.order_number : null;
+                                        (![null,undefined].includes(query.withdrawal_number)) ? set[`parts.${line_id}.withdrawal_number`] = query.withdrawal_number : null;
+                                        (![null,undefined].includes(query.supplier_code)) ? set[`parts.${line_id}.supplier_code`] = query.supplier_code : null;
+                                    }
+                                }
+                            });
+                        }
+
+                        // update db if only there's at least one (1) thing to update
+                        if(Object.keys(set).length > 0){
+                            unknownCollection.updateOne(
+                                { _id: query.service_id },
+                                {
+                                    $set: set
+                                }
+                            ).then(docs => {
+                                // print for debugging
+                                console.log("Update okay. Set:",set);
+            
+                                isDone();
+                            }).catch(error => {
+                                isDone("Unknown (update)",error);
+                            });
+                        } else {
+                            // print for debugging
+                            console.log("Update empty.");
+
+                            isDone();
+                        }
+                    } else {
+                        // return 400 (Bad Request) error
+                        res.status(400).send("Bad Request. Invalid 'service_type' or 'service_id'.");
+                    }
                 }).catch(error => {
-                    console.log(error);
-                    res.json({error:1, message: error});
+                    isDone("Unknown (find)",error);
                 });
-            }).catch(error => {
-                console.log(error);
-                res.json({error:1, message: error});
-            });
-        };
-        /************** end Functions **************/
+            } else {
+                // return 400 (Bad Request) error
+                res.status(400).send("Bad Request");
+            }
 
-        connectToImap();
+        } else {
+            // return 401 (Unauthorized) error
+            res.status(401).send("Unauthorized");
+        }
+        /************** end Process **************/
+
+
+        /************** Functions **************/
+        
+         // will resolve the function depending if there was an error or not. Also, this will display the error if an error is passed
+         // check if all CLIENTS[] are done
+         function isDone(errTitle,err){ 
+            
+            // if error, display the title and error
+            if(err) {
+                console.log(`Error in ${errTitle}:`,err);
+                hasError = true;
+            }
+
+            // close the mongodb client connection
+            client.close();
+            
+            // return 
+            res.status(hasError?500:200).send(hasError?"ERROR":"OK");
+        }
+        /************** end Functions **************/
     }).catch(error => {
         // print error
         console.log("Error in CO",error);
