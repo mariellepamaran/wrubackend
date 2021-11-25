@@ -1,37 +1,22 @@
-/**
- * pushReportToLCT
- * 
- * >> Check email and get attachments. Send it to LCT <<
- * 
- * 
- */
 
-const co = require('co');
-const imaps = require('imap-simple');
-const config = {
-    imap: {
-        user: 'wru.developer@gmail.com',
-        password: 'IamWRUCorp',
-        host: 'imap.gmail.com',
-        port: 993,
-        tls: true,
-        authTimeout: 30000,
-        tlsOptions: { 
-            rejectUnauthorized: false
-        }
-    }
-};
+ const functions = require('firebase-functions');
+ const co = require('co');
+ const imaps = require('imap-simple');
+ const config = {
+     imap: {
+         user: 'wru.developer@gmail.com',
+         password: 'IamWRUCorp',
+         host: 'imap.gmail.com',
+         port: 993,
+         tls: true,
+         authTimeout: 30000,
+         tlsOptions: { 
+             rejectUnauthorized: false
+         }
+     }
+ };
 
-// Tips: Logout of all gmail accounts then sign in to the account you want to use for email.
-// https://www.google.com/settings/security/lesssecureapps
-
-exports.pushReportToLCTxDev = (req, res) => {
-    // set the response HTTP header
-    res.set('Content-Type','application/json');
-    res.set('Access-Control-Allow-Origin', '*');
-    res.set('Access-Control-Allow-Headers', '*');
-    res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-
+ exports.test = functions.https.onRequest((req, res) => {
     co(function*() {
 
         /************** Functions **************/
@@ -206,4 +191,4 @@ exports.pushReportToLCTxDev = (req, res) => {
         // return error
         res.status(500).send('Error in CO: ' + JSON.stringify(error));
     });
-};
+});
