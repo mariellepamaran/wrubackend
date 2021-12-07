@@ -7,6 +7,7 @@
  */
 
 const functions = require('firebase-functions');
+const request = require('request')
 const co = require('co');
 const imaps = require('imap-simple');
 const config = {
@@ -22,6 +23,7 @@ const config = {
         }
     }
 };
+let messageIds = []
 // Tips: Logout of all gmail accounts then sign in to the account you want to use for email.
 // https://www.google.com/settings/security/lesssecureapps
 
@@ -40,14 +42,13 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
                 // open inbox
                 connection.openBox('INBOX').then(function () {
             
-                    // Fetch emails from the last 24h
-                    const delay = 24 * 3600 * 1000;
+                    // Fetch emails today
 
-                    var yesterday = new Date();
-                        yesterday.setTime(Date.now() - delay);
-                    yesterday = yesterday.toISOString();
+                    var today = new Date();
+                    today.setHours(0,0,0,0)
+                    today = today.toISOString();
 
-                    const searchCriteria = ['UNSEEN', ['SINCE', yesterday]];
+                    const searchCriteria = ['UNSEEN', ['SINCE', today]];
                     const fetchOptions = { bodies: ['HEADER.FIELDS (FROM TO SUBJECT DATE)'], struct: true };
             
                     // retrieve only the headers of the messages
@@ -142,7 +143,17 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
                                         
                                         // Add the generated object to our
                                         // result array
-                                        result.push(obj)
+
+
+                                        if (obj.Vehicle) {
+                                            const id = message.attributes.uid
+                                            if (!messageIds.includes(id)) {
+                                                messageIds.push(id)
+                                            }
+                                            // Add the generated object to our
+                                            // result array
+                                            result.push(obj)
+                                        }
                                     }
         
                                     return {
@@ -158,6 +169,8 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
             
                     return Promise.all(attachments);
                 }).then(function (attachments) {
+
+                    
                     // console.log(JSON.stringify(attachments));
 
                     const csvAttachments = [];
@@ -174,13 +187,102 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
                         }
                     });
 
-                
-                    /** #2 and #3 here */
+                    csvAttachments.forEach(csv => {
+                        loopAndSend(csv)
+                    })
 
+                    function loopAndSend(csv) {
+
+                        var failed = []
+                        var success = []
+                        csv.data.forEach((obj, objIndex, objsArray) => {
+                            var options = {
+                                'method': 'GET',
+                                'headers': {
+                                  'Content-Type': 'text/plain'
+                                },
+                                timeout: 120000,
+                                body: JSON.stringify(obj)
+                            };
+
+                            try {
+                                request('http://168.63.233.236/wru/api_wru_save_ggs.aspx',options, function (error, response, body) {
+                                // console.log("---------------------")
+                                if (!error && body) {
+                
+                                    var parsed
+                
+                                    try {
+                                        parsed = JSON.parse(body)
+                                        // console.log(JSON.stringify(parsed))
+                                        if(parsed && parsed.RESULT == 'SAVED') {
+                                            console.log(JSON.stringify(parsed))
+                                            success.push(obj)
+                                            // resolve()
+                                        } else {
+                                            console.log(`else`)
+                                            failed.push(obj)
+
+                                            // reject()
+                                        }
+                                    } catch (error) {
+                                        failed.push(obj)
+                                        // console.error(error);
+                                        // reject(error)
+                                    }
+                
+                                } else {
+                                    console.error(JSON.stringify(error))
+                                    failed.push(obj)
+                                    // reject()
+                                }
+
+                                if((failed.length + success.length) == objsArray.length) {
+                                    console.log('ALL REQUESTED')
+                                    if (failed.length != 0) {
+                                        resendCSV({ data: failed })
+                                    } else {
+                                        console.log('ALL SENT')
+                                        markEmailRead()
+                                    }
+                                } else {
+                                    console.log(`${failed.length + success.length}/${objsArray.length}`)
+                                }
+                            });
+                        } catch (error) {
+                            console.error(JSON.stringify(error))
+                            failed.push(obj)
+                        }
+                    });
+                    }
+
+                    function resendCSV(csv) {
+                        console.log(`Resending ${csv.data.length} object(s)`)
+                        loopAndSend(csv)
+                    }
+
+                    function markEmailRead() {
+                        imaps.connect(config).then(function (connection) {
+
+                            connection.openBox('INBOX').then(function () {
+
+                                messageIds.forEach(id => {
+                                    connection.addFlags(id, ['\\Seen'], function (err) {
+                                        if (err) {
+                                            console.log(err);
+                                        } else {
+                                            console.log("Marked as read!")
+                                        }
+                                    });
+                                })
+
+                            });
+                        })
+                    }
 
                     res.json({
                         ok:1, 
-                        attachments: csvAttachments 
+                        attachments: attachments.length != 0 ? `${csvAttachments.length} CSV File(s) is now being sent.` : 'No report to be sent.'
                     });
                 }).catch(error => {
                     console.log(error);
