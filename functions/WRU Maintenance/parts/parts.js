@@ -66,7 +66,7 @@ exports.parts = (req, res) => {
         if(CLIENT_OPTIONS[query.token]){
             
             // item_number is required (will serve as item's ID)
-            if(query.item_number){
+            if(query.item_number && query.company_code){
 
                 // initialize database
                 const clientName = CLIENT_OPTIONS[query.token].clientName;
@@ -80,6 +80,7 @@ exports.parts = (req, res) => {
                     Item Name
                     Qty
                     SRP
+                    Brand Name
                     Brand Code
                     Supplier Code
                     Last Received Date
@@ -91,8 +92,10 @@ exports.parts = (req, res) => {
                 //     "token":"zV8M2z81pPxhPJelifnz9tjmhwS9eSFIMelE",
                 //     "company_code":"110",
                 //     "item_number":"186300000001",
+                //     "item_name":"XXXXX",
                 //     "qty":"10",
                 //     "srp":"49",
+                //     "brand_name":"XXXXX",
                 //     "brand_code":"G1001556",
                 //     "supplier_code":"VICT02",
                 //     "last_received_date":"",
@@ -100,31 +103,42 @@ exports.parts = (req, res) => {
                 // }
 
                 // object to be saved to the db
-                const obj = {
-                    company_code: query.company_code,
-                    part_name: query.item_name,
-                    qty: query.qty,
-                    srp: query.srp,
-                    brand: query.brand_name,
-                    brand_code: query.brand_code,
-                    supplier_code: query.supplier_code,
-                    last_received_date: query.last_received_date,
-                    last_withdraw_date: query.last_withdraw_date
-                };
-                
-                // update data and insert if does not exist yet
-                partsCollection.updateOne(
-                    { _id: query.item_number },
-                    { $set: obj },
-                    { upsert: true }
-                ).then(docs => {
+                const obj = {};
+
+                (![null,""].includes(query.company_code)) ? obj.company_code = query.company_code : null;
+                (![null,""].includes(query.item_number)) ? obj.item_number = query.item_number : null;
+                (![null,""].includes(query.item_name)) ? obj.item_name = query.item_name : null;
+                (![null,""].includes(query.qty)) ? obj.qty = query.qty : null;
+                (![null,""].includes(query.srp)) ? obj.srp = query.srp : null;
+                (![null,""].includes(query.brand_name)) ? obj.brand_name = query.brand_name : null;
+                (![null,""].includes(query.brand_code)) ? obj.brand_code = query.brand_code : null;
+                (![null,""].includes(query.supplier_code)) ? obj.supplier_code = query.supplier_code : null;
+                (![null,""].includes(query.last_received_date)) ? obj.last_received_date = query.last_received_date : null;
+                (![null,""].includes(query.last_withdraw_date)) ? obj.last_withdraw_date = query.last_withdraw_date : null;
+
+                if(Object.keys(obj).length > 0){
+                    // update data and insert if does not exist yet
+                    partsCollection.updateOne(
+                        { 
+                            company_code: query.company_code,
+                            item_number: query.item_number,
+                        },
+                        { $set: obj },
+                        { upsert: true }
+                    ).then(docs => {
+                        // print for debugging
+                        console.log("Import Okay");
+    
+                        isDone();
+                    }).catch(error => {
+                        isDone("Parts (update)",error);
+                    });
+                } else {
                     // print for debugging
-                    console.log("Import Okay");
+                    console.log("Empty query.");
 
                     isDone();
-                }).catch(error => {
-                    isDone("Parts (update)",error);
-                });
+                }
             } else {
                 // return 400 (Bad Request) error
                 res.status(400).send("Bad Request");
