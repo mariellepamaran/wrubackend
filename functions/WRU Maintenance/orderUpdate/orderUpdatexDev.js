@@ -136,12 +136,12 @@ exports.orderUpdatexDev = (req, res) => {
                                         if(Object.keys(set).length == 0){
                                             
                                             // only add data to "set" is query params exists
-                                            (query.plan_order) ? set[`category.${key}.parts.${line_id}.plan_order`] = query.plan_order : null;
-                                            (query.status) ? set[`category.${key}.parts.${line_id}.status`] = query.status : null;
-                                            (query.po_number) ? set[`category.${key}.parts.${line_id}.po_number`] = query.po_number : null;
-                                            (query.order_number) ? set[`category.${key}.parts.${line_id}.order_number`] = query.order_number : null;
-                                            (query.withdrawal_number) ? set[`category.${key}.parts.${line_id}.withdrawal_number`] = query.withdrawal_number : null;
-                                            (query.supplier_code) ? set[`category.${key}.parts.${line_id}.supplier_code`] = query.supplier_code : null;
+                                            (![null,undefined].includes(query.plan_order)) ? set[`category.${key}.parts.${line_id}.plan_order`] = query.plan_order : null;
+                                            (![null,undefined].includes(query.status)) ? set[`category.${key}.parts.${line_id}.status`] = query.status : null;
+                                            (![null,undefined].includes(query.po_number)) ? set[`category.${key}.parts.${line_id}.po_number`] = query.po_number : null;
+                                            (![null,undefined].includes(query.order_number)) ? set[`category.${key}.parts.${line_id}.order_number`] = query.order_number : null;
+                                            (![null,undefined].includes(query.withdrawal_number)) ? set[`category.${key}.parts.${line_id}.withdrawal_number`] = query.withdrawal_number : null;
+                                            (![null,undefined].includes(query.supplier_code)) ? set[`category.${key}.parts.${line_id}.supplier_code`] = query.supplier_code : null;
                                         }
                                     }
                                 });
@@ -169,12 +169,12 @@ exports.orderUpdatexDev = (req, res) => {
                                     if(Object.keys(set).length == 0){
                                         
                                         // only add data to "set" is query params exists
-                                        (query.plan_order) ? set[`parts.${line_id}.plan_order`] = query.plan_order : null;
-                                        (query.status) ? set[`parts.${line_id}.status`] = query.status : null;
-                                        (query.po_number) ? set[`parts.${line_id}.po_number`] = query.po_number : null;
-                                        (query.order_number) ? set[`parts.${line_id}.order_number`] = query.order_number : null;
-                                        (query.withdrawal_number) ? set[`parts.${line_id}.withdrawal_number`] = query.withdrawal_number : null;
-                                        (query.supplier_code) ? set[`parts.${line_id}.supplier_code`] = query.supplier_code : null;
+                                        (![null,undefined].includes(query.plan_order)) ? set[`parts.${line_id}.plan_order`] = query.plan_order : null;
+                                        (![null,undefined].includes(query.status)) ? set[`parts.${line_id}.status`] = query.status : null;
+                                        (![null,undefined].includes(query.po_number)) ? set[`parts.${line_id}.po_number`] = query.po_number : null;
+                                        (![null,undefined].includes(query.order_number)) ? set[`parts.${line_id}.order_number`] = query.order_number : null;
+                                        (![null,undefined].includes(query.withdrawal_number)) ? set[`parts.${line_id}.withdrawal_number`] = query.withdrawal_number : null;
+                                        (![null,undefined].includes(query.supplier_code)) ? set[`parts.${line_id}.supplier_code`] = query.supplier_code : null;
                                     }
                                 }
                             });
