@@ -24,6 +24,8 @@ const request = require('request');
 const pageIndexClient = {
     "wd-coket1": 0,
     "wd-coket2": 0,
+    "wd-fleet|fromT1" : 0,
+    "wd-fleet|fromT2" : 0,
     "wd-wilcon": 0,
 };
 const geofenceGroupIdClient = {
@@ -52,13 +54,18 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
         const CLIENTS = {
             "wd-coket1": null,
             "wd-coket2": null,
+            "wd-fleet|fromT1" : null,
+            "wd-fleet|fromT2" : null,
             "wd-wilcon": null,
         };
         const CLIENT_OPTIONS = {
-            "wd-coket1": {    ggsURL: "coca-cola.server93.com",    appId: 9,      username: "wru_marielle",    password: "467388",       geofenceGroupIds: null                     },
-            "wd-coket2": {    ggsURL: "coca-cola.server93.com",    appId: 4,      username: "wru_marielle",    password: "467388",       geofenceGroupIds: null                     },
-            "wd-wilcon": {    ggsURL: "wru.server93.com",          appId: 427,    username: "wru_marielle",    password: "ilovecats",    geofenceGroupIds: [8647,8640,9326,9332]    },
-                                                                                                                                         // 8647 - Store, 8640- Warehouse, 9326- PIER, 9332 - Processing
+            "wd-coket1": {  identifier: 'T1',      ggsURL: "coca-cola.server93.com",    appId: 9,      username: "wru_marielle",    password: "467388",       geofenceGroupIds: null                     },
+            "wd-coket2": {  identifier: 'T2',      ggsURL: "coca-cola.server93.com",    appId: 4,      username: "wru_marielle",    password: "467388",       geofenceGroupIds: null                     },
+            "wd-wilcon": {  identifier: 'Wilcon',  ggsURL: "wru.server93.com",          appId: 427,    username: "wru_marielle",    password: "ilovecats",    geofenceGroupIds: [8647,8640,9326,9332]    },
+                                                                                                                                        // 8647 - Store, 8640- Warehouse, 9326- PIER, 9332 - Processing
+                                                                                                
+            "wd-fleet|fromT1":  {  importFrom: "wd-coket1",    geofenceIdentifier: 'short_name'        },
+            "wd-fleet|fromT2":  {  importFrom: "wd-coket2",    geofenceIdentifier: 'short_name'        },
         };
 
         var hasError = false; // check if there were error/s during process(). 
@@ -71,15 +78,20 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
         /************** Functions **************/
         function implement (clientName){
             // initialize database
-            const db = client.db(clientName);
+            const dbName = clientName.split("|")[0];
+            const db = client.db(dbName);
             const geofencesCollection = db.collection('geofences');
 
+            // import options
+            const importFrom = CLIENT_OPTIONS[clientName].importFrom;
+            const geofenceIdentifier = CLIENT_OPTIONS[clientName].geofenceIdentifier || 'id';
+
             // get Main credentials
-            const ggsURL = CLIENT_OPTIONS[clientName].ggsURL;
-            const appId = CLIENT_OPTIONS[clientName].appId;
-            const username = CLIENT_OPTIONS[clientName].username;
-            const password = CLIENT_OPTIONS[clientName].password;
-            const geofenceGroupIds = CLIENT_OPTIONS[clientName].geofenceGroupIds;
+            const ggsURL = CLIENT_OPTIONS[ importFrom || clientName ].ggsURL;
+            const appId = CLIENT_OPTIONS[ importFrom || clientName ].appId;
+            const username = CLIENT_OPTIONS[ importFrom || clientName ].username;
+            const password = CLIENT_OPTIONS[ importFrom || clientName ].password;
+            const geofenceGroupIds = CLIENT_OPTIONS[ importFrom || clientName ].geofenceGroupIds;
 
             // get user's token (to be used to request data from WRU Main)
             request({
@@ -171,13 +183,19 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
                                 if(geofence.length > 0) {
                                     geofence.forEach(val => {
 
+                                        // set geofence query
+                                        var geofenceQuery = { geofence_id: val.id };
+                                        if(geofenceIdentifier == 'short_name'){
+                                            geofenceQuery = { short_name: val.name };
+                                        }
+
                                         function updateGeofence(){
                                             // set the fields of the vehicle which will be updated
                                             const set = { geofence_id: val.id, short_name: val.name };
 
                                             // update geofence if either $or condition is correct
                                             // UPSERT is true, so it will add the data if it does not exist yet
-                                            childPromise.push(geofencesCollection.updateOne({ geofence_id: val.id },{ $set: set },{ upsert: true }));
+                                            childPromise.push(geofencesCollection.updateOne(geofenceQuery,{ $set: set },{ upsert: true }));
                                         }
                                         
                                         // we're checking if the geofence name does not have a substring of "-" because 
@@ -192,7 +210,7 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
                                             // this was added because this cloud function is called a lot of times. And if we save everytime it's called,
                                             // then we're updating the database with no new changes/updates. 
                                             // It also causes a small lag in WRU websites' changestream
-                                            geofencesCollection.find({ geofence_id: val.id }).toArray().then(gDocs => {
+                                            geofencesCollection.find(geofenceQuery).toArray().then(gDocs => {
                                                 const gDoc = gDocs[0];
 
                                                 if(gDoc){
