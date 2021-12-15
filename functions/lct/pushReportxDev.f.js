@@ -8,6 +8,7 @@
 
 const functions = require('firebase-functions');
 const co = require('co');
+const request = require('request');
 const imaps = require('imap-simple');
 const config = {
     imap: {
@@ -22,10 +23,12 @@ const config = {
         }
     }
 };
+const batchOf = 10;
+
 // Tips: Logout of all gmail accounts then sign in to the account you want to use for email.
 // https://www.google.com/settings/security/lesssecureapps
-
-exports = module.exports = functions.region('asia-east2').runWith({ timeoutSeconds: 60, memory: '128MB' }).https.onRequest((req, res) => {
+                                                                                // 5 min
+exports = module.exports = functions.region('asia-east2').runWith({ timeoutSeconds: 300, memory: '256MB' }).https.onRequest((req, res) => { 
 
     co(function*() {
 
@@ -37,17 +40,18 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
             // connect imap
             imaps.connect(config).then(function (connection) {
 
+                const messageIds = [];
+
                 // open inbox
                 connection.openBox('INBOX').then(function () {
             
-                    // Fetch emails from the last 24h
-                    const delay = 24 * 3600 * 1000;
+                    // Fetch emails today
 
-                    var yesterday = new Date();
-                        yesterday.setTime(Date.now() - delay);
-                    yesterday = yesterday.toISOString();
+                    var today = new Date();
+                    today.setHours(0,0,0,0)
+                    today = today.toISOString();
 
-                    const searchCriteria = ['UNSEEN', ['SINCE', yesterday]];
+                    const searchCriteria = ['UNSEEN', ['SINCE', today]];
                     const fetchOptions = { bodies: ['HEADER.FIELDS (FROM TO SUBJECT DATE)'], struct: true };
             
                     // retrieve only the headers of the messages
@@ -132,17 +136,22 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
                                         // store it in the form of array otherwise
                                         // directly the value is stored
                                         for (let j in headers) {
-                                            // if (properties[j].includes(",")) {
-                                            // obj[headers[j]] = properties[j]
-                                            //     .split(",").map(item => item.trim())
-                                            // }
-                                            // else obj[headers[j]] = properties[j]
                                             obj[headers[j]] = properties[j]
                                         }
                                         
                                         // Add the generated object to our
                                         // result array
-                                        result.push(obj)
+
+
+                                        if (obj.Vehicle) {
+                                            const id = message.attributes.uid
+                                            if (!messageIds.includes(id)) {
+                                                messageIds.push(id)
+                                            }
+                                            // Add the generated object to our
+                                            // result array
+                                            result.push(obj)
+                                        }
                                     }
         
                                     return {
@@ -158,8 +167,7 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
             
                     return Promise.all(attachments);
                 }).then(function (attachments) {
-                    // console.log(JSON.stringify(attachments));
-
+                    
                     const csvAttachments = [];
 
                     // check if file is CSV based on filename
@@ -174,14 +182,158 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
                         }
                     });
 
-                
-                    /** #2 and #3 here */
+                    const failed = {};
+                    const success = {};
 
+                    if(csvAttachments.length > 0){
+                        // loop csv attachments
+                        csvAttachments.forEach((csv,i) => {
+                            loopAndSend(csv,i);
+                        });
+                    } else {
+                        // return that no attachments was received
+                        res.json({
+                            ok: 1, 
+                            attachments: 'No attachments received'
+                        });
+                    }
 
-                    res.json({
-                        ok:1, 
-                        attachments: csvAttachments 
-                    });
+                    function promiseRequest( obj, objIndex, attachmentIndex ) {
+                        return new Promise(resolve => {
+                            
+                            success[attachmentIndex] = success[attachmentIndex] || [];
+                            failed[attachmentIndex] = failed[attachmentIndex] || [];
+
+                            // Request data and options
+                            const postData = JSON.stringify(obj);
+                            const options = {
+                                'method': 'POST',
+                                'headers': {
+                                    'Content-Type': 'text/plain',
+                                    'Content-Length': postData.length,
+                                    'Connection': 'keep-alive'
+                                },
+                                timeout: 120000,
+                                body: postData
+                            };
+
+                            // generate random number for timeout
+                            const maximum = 2;
+                            const minimum = 0;
+                            const randomNumber = (Math.random() * (maximum - minimum + 1) ) << 0;
+                        
+                            // requests should not be sent all at once.There should be time gaps between request (???)
+                            setTimeout(function(){
+
+                                // send request
+                                request('http://168.63.233.236/wru/api_wru_save_ggs.aspx', options, function(err, response, body) {
+
+                                    if(body){
+                                        if(body.indexOf('SAVED') > -1){
+                                            success[attachmentIndex].push(objIndex);
+
+                                            // delete index from failed[index]
+                                            failed[attachmentIndex] = failed[attachmentIndex].filter(x => x !== objIndex);
+                                        } else {
+                                            // 403 error
+                                            failed[attachmentIndex].push(objIndex);
+                                        }
+                                    } else {
+                                        // unknown request error
+                                        failed[attachmentIndex].push(objIndex);
+                                        console.log('Error',error);
+                                    }
+                                    resolve();
+                                });
+                            }, 100 * randomNumber); // 100ms * Random number
+                        });
+                    }
+
+                    function loopAndSend( csv, attachmentIndex, _MIN=0, _MAX=batchOf ) {
+
+                        const promises = [];
+
+                        // send by batches (by 10)
+                        function batchSend( MIN, MAX ){
+
+                            for(var i = MIN; i < MAX; i++){
+                                const obj = csv.data[i];
+                                if(obj && ((failed[attachmentIndex]||[]).length == 0 || failed[attachmentIndex].includes(i))){
+                                    promises.push(promiseRequest(obj,i,attachmentIndex));
+                                }
+                            }
+
+                            if(promises.length > 0){
+                                Promise.all(promises).then(result => {
+        
+                                    if((failed[attachmentIndex]||[]).length > 0){
+                                        resendCSV(csv,attachmentIndex,MIN,MAX);
+                                    } else {
+                                        if(success[attachmentIndex].length == csv.data.length){
+                                            markEmailRead();
+                                        } else {
+                                            if((MAX+batchOf) < csv.data.length){
+                                                batchSend(MAX,MAX+batchOf);
+                                            } else {
+                                                batchSend(MAX,csv.data.length);
+                                            }
+                                        }
+                                    }
+                                });
+                            } else {
+                                if(success[attachmentIndex].length == csv.data.length){
+                                    markEmailRead();
+                                } else {
+                                    if((MAX+batchOf) < csv.data.length){
+                                        batchSend(MAX,MAX+batchOf);
+                                    } else {
+                                        batchSend(MAX,csv.data.length);
+                                    }
+                                }
+                            }
+
+                        }
+                        batchSend(_MIN,_MAX);
+                    }
+
+                    function resendCSV(csv,index,MIN,MAX) {
+                        console.log(`Resending ${failed[index].length} object(s)  |  Success ${success[index].length}/${csv.data.length}`);
+                        loopAndSend(csv,index,MIN,MAX);
+                    }
+
+                    function markEmailRead() {
+                        console.log('Marking email as read...');
+
+                        imaps.connect(config).then(function (connection) {
+
+                            connection.openBox('INBOX').then(function () {
+
+                                messageIds.forEach(id => {
+                                    connection.addFlags(id, ['\\Seen'], function (err) {
+                                        if (err) {
+                                            console.log(err);
+                                        } else {
+                                            console.log("Marked as read!");
+                                        }
+
+                                        const successLength = {};
+                                        Object.keys(success).forEach(key => { successLength[key] = success[key].length; });
+
+                                        const failedLength = {};
+                                        Object.keys(failed).forEach(key => { failedLength[key] = failed[key].length; });
+
+                                        res.json({
+                                            ok: 1,
+                                            failed: failedLength,
+                                            success: successLength,
+                                            attachments: attachments.length != 0 ? `${csvAttachments.length} CSV File(s) is now being sent.` : 'No report to be sent.'
+                                        });
+                                    });
+                                })
+
+                            });
+                        })
+                    }
                 }).catch(error => {
                     console.log(error);
                     res.json({error:1, message: error});
