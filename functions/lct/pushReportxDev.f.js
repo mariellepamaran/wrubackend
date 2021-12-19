@@ -251,13 +251,19 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
 
                     function loopAndSend( csv, attachmentIndex, _MIN=0, _MAX=batchOf ) {
 
+                        // array of promises
                         const promises = [];
 
                         // send by batches (by 10)
                         function batchSend( MIN, MAX ){
 
+                            // csv[0] - csv[10] ... csv[650] - csv[660] ... etc
                             for(var i = MIN; i < MAX; i++){
                                 const obj = csv.data[i];
+
+                                // if obj is not null AND
+                                // failed[attachmentIndex] is empty -- meaning it's a new batch OR
+                                // failed[attachmentIndex] is not empty and index(i) is inside array -- meaning it failed to send before and is now resending. If index(i) is NOT in array, meaning it was successfully sent before.
                                 if(obj && ((failed[attachmentIndex]||[]).length == 0 || failed[attachmentIndex].includes(i))){
                                     promises.push(promiseRequest(obj,i,attachmentIndex));
                                 }
@@ -266,27 +272,36 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
                             if(promises.length > 0){
                                 Promise.all(promises).then(result => {
         
+                                    // if some requests failed to send, resend it...
                                     if((failed[attachmentIndex]||[]).length > 0){
                                         resendCSV(csv,attachmentIndex,MIN,MAX);
                                     } else {
+                                        // if successful request length is same as data's length, mark email as read -- note this will end the function even if only 1 attachment is finished
                                         if(success[attachmentIndex].length == csv.data.length){
                                             markEmailRead();
                                         } else {
+                                            // send another batch of request
                                             if((MAX+batchOf) < csv.data.length){
+                                                // send next 10 batch
                                                 batchSend(MAX,MAX+batchOf);
                                             } else {
+                                                // send last batch
                                                 batchSend(MAX,csv.data.length);
                                             }
                                         }
                                     }
                                 });
                             } else {
+                                // if successful request length is same as data's length, mark email as read -- note this will end the function even if only 1 attachment is finished
                                 if(success[attachmentIndex].length == csv.data.length){
                                     markEmailRead();
                                 } else {
+                                    // send another batch of request
                                     if((MAX+batchOf) < csv.data.length){
+                                        // send next 10 batch
                                         batchSend(MAX,MAX+batchOf);
                                     } else {
+                                        // send last batch
                                         batchSend(MAX,csv.data.length);
                                     }
                                 }
@@ -316,6 +331,7 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
                                             console.log("Marked as read!");
                                         }
 
+                                        // only return the length of success and failed
                                         const successLength = {};
                                         Object.keys(success).forEach(key => { successLength[key] = success[key].length; });
 
