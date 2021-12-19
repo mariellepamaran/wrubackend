@@ -26,7 +26,7 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
     co(function*() {
         // url parameters
         const params = req.params[0];
-        const params_value = params.split("/");
+        const params_value = params.split("/").filter(x => x);
 
         // .../<APP_ID>/<Identifier>/<Value>
         // fields from url params
