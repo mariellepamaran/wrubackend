@@ -9,7 +9,7 @@ const functions = require('firebase-functions');
 const co = require('co');
 const mongodb = require('mongodb');
 const request = require('request');
- 
+
 // PRODUCTION
 const prodURI = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
 // DEVELOPMENT
@@ -20,22 +20,24 @@ const clientApplicationId = {
     "4":    "wd-coket2",
     "14":   "wd-fleet",
     "427":  "wd-wilcon",
+    "208":  "pldt",
 };
- 
+
 exports = module.exports = functions.region('asia-east2').runWith({ timeoutSeconds: 60, memory: '128MB' }).https.onRequest((req, res) => {
- 
+
     co(function*() {   
         
         /************** Variable Initialization **************/
         // initialize mongoDb Client
         const prodClient = yield mongodb.MongoClient.connect(prodURI,{ useUnifiedTopology: true }, { useNewUrlParser: true }, { connectTimeoutMS: 30000 }, { keepAlive: 1});
         const devClient = yield mongodb.MongoClient.connect(devURI,{ useUnifiedTopology: true }, { useNewUrlParser: true }, { connectTimeoutMS: 30000 }, { keepAlive: 1});
-         
+        
         const CLIENT_OPTIONS = {
-            "wd-coket1": {   ggsURL: "coca-cola.server93.com",    appId: 9,      username: "wru_marielle",    password: "467388",      validBody: ['name']   },
-            "wd-coket2": {   ggsURL: "coca-cola.server93.com",    appId: 4,      username: "wru_marielle",    password: "467388",      validBody: ['name']   }, 
-            "wd-fleet":  {   ggsURL: "coca-cola.server93.com",    appId: 14,     username: "wru_marielle",    password: "467388",      validBody: ['name']   },
-            "wd-wilcon": {   ggsURL: "wru.server93.com",          appId: 427,    username: "wru_marielle",    password: "ilovecats",   validBody: ['name']   },
+            "wd-coket1": {   ggsURL: "coca-cola.server93.com",    appId: 9,      username: "wru_marielle",    password: "467388",           validBody: ['name']   },
+            "wd-coket2": {   ggsURL: "coca-cola.server93.com",    appId: 4,      username: "wru_marielle",    password: "467388",           validBody: ['name']   }, 
+            "wd-fleet":  {   ggsURL: "coca-cola.server93.com",    appId: 14,     username: "wru_marielle",    password: "467388",           validBody: ['name']   },
+            "wd-wilcon": {   ggsURL: "wru.server93.com",          appId: 427,    username: "wru_marielle",    password: "ilovecats",        validBody: ['name']   },
+            "pldt":      {   ggsURL: "pldt.server93.com",         appId: 208,    username: "wru_dev",         password: "iwanttomukbang",   validBody: ['name']   },
         };
 
         var hasError = false; // check if there were error/s during process(). 
@@ -53,7 +55,7 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
         const params_value = params.split("/").filter(x => x);
 
         // -------------------------------------------.../<APP_ID>/<Identifier>/<Value>
-        // .../<APP_ID>/userId/<Value>
+        // .../<APP_ID>/username/<Value>
         // fields from url params
         const appId = params_value[0];
         const identifier = params_value[1];
@@ -97,65 +99,97 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
                     // store token
                     const token = body.token;
 
-                    // only get valid body key/value
-                    const ggsReqBody = {};
-                    validBody.forEach(val => {
-                        (reqBody[val]) ? ggsReqBody[val] = reqBody[val] : null;
-                    });
+                    request({
+                        method: 'GET',
+                        url: `https://${ggsURL}/comGpsGate/api/v.1/applications/${appId}/users/${value}?Identifier=Username`,
+                        headers: {
+                            'Authorization': token
+                        },
+                    }, (error, response, body) => {
 
-                    if(Object.keys(ggsReqBody).length > 0){
-                    
-                        request({
-                            method: 'PUT',
-                            url: `https://${ggsURL}/comGpsGate/api/v.1/applications/${appId}/users/${value}`,
-                            headers: {
-                                'Authorization': token
-                            },
-                            json: true,
-                            body: ggsReqBody
-                        }, (error, response, body) => {
-    
-                            // if no error and status code is 200 (OK)
-                            if (!error && (response||{}).statusCode == 200) {
-    
-                                // update vehicle in db
-                                childPromise.push(
-                                    prodVehiclesCollection.updateOne(
-                                        {
-                                            _id: value
-                                        }, 
-                                        {
-                                            $set: ggsReqBody
-                                        }
-                                    )
-                                );
-                                childPromise.push(
-                                    devVehiclesCollection.updateOne(
-                                        {
-                                            _id: value
-                                        }, 
-                                        {
-                                            $set: ggsReqBody
-                                        }
-                                    )
-                                );
+                        // if no error and status code is 200 (OK)
+                        if (!error && (response||{}).statusCode == 200) {
 
-                                Promise.all(childPromise).then(docs => {
-                                    isDone();
-                                }).catch(error => {
-                                    isDone("Promise All",error);
+                            // parse body
+                            var parsedBody = body;
+                            try {
+                                parsedBody = JSON.parse(body);
+                            } catch(error) {}
+
+                            // check if valid
+                            if(parsedBody && parsedBody.id){
+
+                                // only get valid body key/value
+                                const ggsReqBody = {};
+                                validBody.forEach(val => {
+                                    (reqBody[val]) ? ggsReqBody[val] = reqBody[val] : null;
                                 });
     
+                                if(Object.keys(ggsReqBody).length > 0){
+                                    
+                                    request({
+                                        method: 'PUT',
+                                        url: `https://${ggsURL}/comGpsGate/api/v.1/applications/${appId}/users/${parsedBody.id}`,
+                                        headers: {
+                                            'Authorization': token
+                                        },
+                                        json: true,
+                                        body: ggsReqBody
+                                    }, (error, response, body) => {
+                
+                                        // if no error and status code is 200 (OK)
+                                        if (!error && (response||{}).statusCode == 200) {
+                
+                                            // update vehicle in db
+                                            childPromise.push(
+                                                prodVehiclesCollection.updateOne(
+                                                    {
+                                                        _id: parsedBody.id
+                                                    }, 
+                                                    {
+                                                        $set: ggsReqBody
+                                                    }
+                                                )
+                                            );
+                                            childPromise.push(
+                                                devVehiclesCollection.updateOne(
+                                                    {
+                                                        _id: parsedBody.id
+                                                    }, 
+                                                    {
+                                                        $set: ggsReqBody
+                                                    }
+                                                )
+                                            );
+    
+                                            Promise.all(childPromise).then(docs => {
+                                                isDone();
+                                            }).catch(error => {
+                                                isDone("Promise All",error);
+                                            });
+                
+                                        } else {
+                                            isDone("GGS Vehicle Update",error||body);
+                                        }
+                                    });
+                                } else {
+                                    errorMessage("Empty request body. Data sent may not be valid or is empty.");
+                                }
                             } else {
-                                isDone("GGS Vehicle Update",error||body);
+                                errorMessage("Vehicle username does not exist.");
                             }
-                        });
-                    } else {
-                        isDone("GGS Vehicle Update","Empty body");
-                    }
+
+                        } else {
+                            if((response||{}).statusCode == 404){
+                                errorMessage("Vehicle username does not exist.");
+                            } else {
+                                isDone("Get Vehicle by Username",error||body);
+                            }
+                        }
+                    });
 
                 } else {
-                    isDone("Token Request",error);
+                    isDone("Token Request",error||body);
                 }
             });
             
@@ -176,7 +210,22 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
                 devClient.close();
                 
                 // return 
-                res.status(hasError?500:200).send(hasError?"ERROR":"OK");
+                if(hasError){
+                    res.status(500).send({
+                        error: 1,
+                        message: "Internal Server Error"
+                    });
+                } else {
+                    res.status(200).send("OK");
+                }
+            }
+
+            function errorMessage(errMessage){
+                // return error with message
+                res.status(500).send({
+                    error: 1,
+                    message: errMessage
+                });
             }
             /************** end Functions **************/
 
