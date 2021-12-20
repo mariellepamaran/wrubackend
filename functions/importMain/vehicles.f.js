@@ -27,6 +27,7 @@ const pageIndexClient = {
     "wd-coket2": 0,
     "wd-fleet":  0,
     "wd-wilcon": 0,
+    "pldt": 0,
 };
 
 // database url (production)
@@ -56,20 +57,22 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
             "wd-coket2": null,
             "wd-fleet":  null,
             "wd-wilcon": null,
+            // "pldt": null,
         };
         const CLIENT_OPTIONS = {
             // "wd-coket1|fromT2" - we are getting other info from CokeT2 (base T1 on TagId)
-            "wd-coket1": {           ggsURL: "coca-cola.server93.com",    appId: 9,      username: "wru_marielle",    password: "467388",       tagId: null,    customfields: ["Trailer","Tractor Conduction","Base Site Code","Base Site","Equipment Number","Availability","Pal Cap","Site","Site Code"]                     },
-            "wd-coket1|fromT2": {    ggsURL: "coca-cola.server93.com",    appId: 4,      username: "wru_marielle",    password: "467388",       tagId: 630,     customfields: ["Offline Remark"]    }, // TagId: "ALL T1"
-            "wd-coket2": {           ggsURL: "coca-cola.server93.com",    appId: 4,      username: "wru_marielle",    password: "467388",       tagId: 27,      customfields: ["Trailer","Tractor Conduction","Base Site Code","Base Site","Equipment Number","Availability","Pal Cap","Site","Site Code","Offline Remark"]    }, // TagId: "ALL T2"
-            "wd-fleet":  {           ggsURL: "coca-cola.server93.com",    appId: 14,     username: "wru_marielle",    password: "467388",       tagId: null,    customfields: ["CN1","CN2","Fuel Capacity","Truck Model"]                                                                                                      },
-            "wd-wilcon": {           ggsURL: "wru.server93.com",          appId: 427,    username: "wru_marielle",    password: "ilovecats",    tagId: 8634,    customfields: ["Truck Number","Plate Number"]                                                                                                                  }, // TagID: "ALL"
+            "wd-coket1": {           ggsURL: "coca-cola.server93.com",    appId: 9,      username: "wru_marielle",    password: "467388",           tagId: null,    customfields: ["Trailer","Tractor Conduction","Base Site Code","Base Site","Equipment Number","Availability","Pal Cap","Site","Site Code"]                     },
+            "wd-coket1|fromT2": {    ggsURL: "coca-cola.server93.com",    appId: 4,      username: "wru_marielle",    password: "467388",           tagId: 630,     customfields: ["Offline Remark"]    }, // TagId: "ALL T1"
+            "wd-coket2": {           ggsURL: "coca-cola.server93.com",    appId: 4,      username: "wru_marielle",    password: "467388",           tagId: 27,      customfields: ["Trailer","Tractor Conduction","Base Site Code","Base Site","Equipment Number","Availability","Pal Cap","Site","Site Code","Offline Remark"]    }, // TagId: "ALL T2"
+            "wd-fleet":  {           ggsURL: "coca-cola.server93.com",    appId: 14,     username: "wru_marielle",    password: "467388",           tagId: null,    customfields: ["CN1","CN2","Fuel Capacity","Truck Model"]                                                                                                      },
+            "wd-wilcon": {           ggsURL: "wru.server93.com",          appId: 427,    username: "wru_marielle",    password: "ilovecats",        tagId: 8634,    customfields: ["Truck Number","Plate Number"]                                                                                                                  }, // TagID: "ALL"
+            "pldt": {                ggsURL: "pldt.server93.com",         appId: 208,    username: "wru_dev",         password: "iwanttomukbang",   tagId: null,    customfields: []                                                                                                                  },
         };
 
         var hasError = false; // check if there were error/s during process(). 
-                              // the reason for this is to send status 500 after all CLIENTS are done 
-                              // instead of returning error immediately while other CLIENTS (if available) 
-                              // have not yet undergone through process().
+                                // the reason for this is to send status 500 after all CLIENTS are done 
+                                // instead of returning error immediately while other CLIENTS (if available) 
+                                // have not yet undergone through process().
         /************** end Variable Initialization **************/
 
 
