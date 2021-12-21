@@ -1,5 +1,5 @@
 /**
- * eventsCT1_CICO
+ * eventsCokeT1Cico
  * 
  * >> Send CICO data to Coke everytime WD receives an event <<
  * 
@@ -17,6 +17,7 @@
  * 
  */
 
+const functions = require('firebase-functions');
 const co = require('co');
 const mongodb = require('mongodb');
 const ObjectId = require('mongodb').ObjectID;
@@ -26,12 +27,7 @@ const rp = require('request-promise');
 // database url (production)
 const uri = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
 
-exports.eventsCT1_CICO = (req, res) => {
-    // set the response HTTP header
-    res.set('Content-Type','application/json');
-    res.set('Access-Control-Allow-Origin', '*');
-    res.set('Access-Control-Allow-Headers', '*');
-    res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+exports = module.exports = functions.region('asia-east2').runWith({ timeoutSeconds: 60, memory: '128MB' }).https.onRequest((req, res) => {
 
     // for development purposes (value is FALSE), everytime the function is called, data will not send to Coke.
     // for production (value is TRUE), data will send to Coke API
@@ -444,4 +440,4 @@ exports.eventsCT1_CICO = (req, res) => {
         // return error
         res.status(500).send('Error in CO: ' + JSON.stringify(error));
     });
-};
+});

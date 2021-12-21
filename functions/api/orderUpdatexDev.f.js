@@ -22,7 +22,7 @@ const uri = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-dev-shard-00-00.tyysb.mongodb.ne
 exports = module.exports = functions.region('asia-east2').runWith({ timeoutSeconds: 60, memory: '128MB' }).https.onRequest((req, res) => {
 
     co(function*() {
-        
+            
         /************** Variable Initialization **************/
         // request data
         const method = req.method;
@@ -54,9 +54,9 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
         };
 
         var hasError = false; // check if there were error/s during process(). 
-                              // the reason for this is to send status 500 after all CLIENTS are done 
-                              // instead of returning error immediately while other CLIENTS (if available) 
-                              // have not yet undergone through process().
+                            // the reason for this is to send status 500 after all CLIENTS are done 
+                            // instead of returning error immediately while other CLIENTS (if available) 
+                            // have not yet undergone through process().
         /************** end Variable Initialization **************/
 
 
@@ -86,17 +86,17 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
                 
                 /*
                     Parameters expected/required:
-                       > Service Type (SR/PMS)
-                       > Service ID
+                    > Service Type (SR/PMS)
+                    > Service ID
 
-                       > Line ID
+                    > Line ID
 
-                       > Plan Order
-                       > Status
-                       > PO Number
-                       > Order Number
-                       > Withdrawal Number
-                       > Supplier Code
+                    > Plan Order
+                    > Status
+                    > PO Number
+                    > Order Number
+                    > Withdrawal Number
+                    > Supplier Code
                 */
 
                 unknownCollection.find({ _id: query.service_id }).toArray().then(docs => {
@@ -143,10 +143,8 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
                                     }
                                 });
                             });
-                        }
-                        
-                        // **PMS**
-                        if(query.service_type == "pms"){
+                        } else {
+                            // **PMS**
                             
                             /*
                                 DB Structure for PMS
@@ -157,7 +155,7 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
                             */
 
                             // loop through parts array of each category
-                                Object.keys(doc.category[key].parts||{}).forEach(line_id => {
+                            Object.keys(doc.parts||{}).forEach(line_id => {
 
                                 // check if part's line id is equal to param's line id
                                 if(line_id == query.line_id){
@@ -176,6 +174,7 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
                                 }
                             });
                         }
+                        
 
                         // update db if only there's at least one (1) thing to update
                         if(Object.keys(set).length > 0){
@@ -219,9 +218,9 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
 
         /************** Functions **************/
         
-         // will resolve the function depending if there was an error or not. Also, this will display the error if an error is passed
-         // check if all CLIENTS[] are done
-         function isDone(errTitle,err){ 
+        // will resolve the function depending if there was an error or not. Also, this will display the error if an error is passed
+        // check if all CLIENTS[] are done
+        function isDone(errTitle,err){ 
             
             // if error, display the title and error
             if(err) {

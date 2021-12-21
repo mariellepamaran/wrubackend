@@ -1,27 +1,25 @@
 /**
- * eventsCT1_Shipments
- * 
- * >> Save the Vehicle's Location History and check if dispatch entries' status should be updated <<
- * 
- * Whether there are dispatch entries to be updated or not, location history of the vehicle MUST be updated.
- * Dispatch entries are filtered by status, vehicle, and geofence
- * 
- */
+* eventsWilcon_Shipments
+* 
+* >> Save the Vehicle's Location History and check if dispatch entries' status should be updated <<
+* 
+* Whether there are dispatch entries to be updated or not, location history of the vehicle MUST be updated.
+* Dispatch entries are filtered by status, vehicle, and geofence
+* 
+*/
 
+const functions = require('firebase-functions');
 const co = require('co');
 const mongodb = require('mongodb');
 const ObjectId = require('mongodb').ObjectID;
 const moment = require('moment-timezone');
+ 
+// PRODUCTION
+// const uri = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+// DEVELOPMENT
+const uri = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
 
-// database url (production)
-const uri = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
-
-exports.eventsCT1_Shipments = (req, res) => {
-    // set the response HTTP header
-    res.set('Content-Type','application/json');
-    res.set('Access-Control-Allow-Origin', '*');
-    res.set('Access-Control-Allow-Headers', '*');
-    res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+exports = module.exports = functions.region('asia-east2').runWith({ timeoutSeconds: 60, memory: '128MB' }).https.onRequest((req, res) => {
 
     co(function*() {
         
@@ -37,9 +35,9 @@ exports.eventsCT1_Shipments = (req, res) => {
         const childPromise = [];
 
         var hasError = false; // check if there were error/s during process(). 
-                              // the reason for this is to send status 500 after all CLIENTS are done 
-                              // instead of returning error immediately while other CLIENTS (if available) 
-                              // have not yet undergone through process().
+                            // the reason for this is to send status 500 after all CLIENTS are done 
+                            // instead of returning error immediately while other CLIENTS (if available) 
+                            // have not yet undergone through process().
         /************** end Variable Initialization **************/
 
         // request data
@@ -54,13 +52,14 @@ exports.eventsCT1_Shipments = (req, res) => {
         console.log("Filtered:",`${query.GEOFENCE_NAME} - ${query.USER_NAME} (${query.USER_USERNAME})`);
 
         // initialize database
-        const dbName = "coket1";
+        const dbName = "wilcon";
+
         const db = client.db('wd-'+dbName);
         const dispatchCollection = db.collection('dispatch');
-        
+
         const dbLogging = client.db(`wd-${dbName}-logging`);
         const eventsCollection = dbLogging.collection('events');
-        
+
         const otherDb = client.db(dbName);
         const geofencesCollection = otherDb.collection('geofences');
         const vehiclesHistoryCollection = otherDb.collection('vehicles_history');
@@ -194,12 +193,12 @@ exports.eventsCT1_Shipments = (req, res) => {
                                 ]
                             }
                         },
-
+        
                         // unwind 'destination'. Meaning to deconstruct the destination array. 
                         // Ex. destination = [ { short_name: "ABC" } ]
                         // After unwind: { short_name: "ABC" }
                         { $unwind: "$destination" },
-
+        
                         // // vehicle must be the same as this event's vehicle
                         // { 
                         //     $lookup: {
@@ -226,8 +225,8 @@ exports.eventsCT1_Shipments = (req, res) => {
                         //         as: 'vehicle',
                         //     }
                         // },
-
-                        // // origin OR destination geofences must be the same as this event's geofence
+        
+                        // origin OR destination geofences must be the same as this event's geofence
                         // { 
                         //     $lookup: {
                         //         from: 'geofences',
@@ -257,7 +256,7 @@ exports.eventsCT1_Shipments = (req, res) => {
                         //         as: 'geofence',
                         //     }
                         // },
-
+        
                         // get the route data from route db
                         { 
                             $lookup: {
@@ -267,22 +266,25 @@ exports.eventsCT1_Shipments = (req, res) => {
                                 as: 'route',
                             }
                         },
-
+        
                         // refer the $unwind destination for example
                         // { $unwind: "$vehicle" }, // do not preserveNull. vehicle is required 
                         // { $unwind: "$geofence" }, // do not preserveNull. geofence is required 
                         { $unwind: "$route" }, // do not preserveNull. Route is required
                     ]).toArray().then(docs => {
-
+                            
                         // store dispatch _ids
                         const _ids = {
                             queueingAtOrigin: [],
                             processingAtOrigin: [],
                             idlingAtOrigin: [],
                             in_transit: [],
-                            complete: []
+                            onSite: [],
+                            returning: [],
+                            complete: [],
+                            incomplete: []
                         };
-
+        
                         // used to save the _ids where only timestamp will be saved
                         // There are times that the truck already reached destination even though it's not yet tagged as 'In Transit'.
                         // Ex. 12:00 PM - Queueing
@@ -297,17 +299,20 @@ exports.eventsCT1_Shipments = (req, res) => {
                             processingAtOrigin: [],
                             idlingAtOrigin: [],
                             in_transit: [],
+                            onSite: [],
+                            returning: [],
                             complete: [],
+                            incomplete: []
                         };
-                        // store necessary data of shipment to make it 'Complete'
-                        const completeNotInTransit = [];
-
+                        // store necessary data of shipment to make it 'On Site'
+                        const onSiteNotInTransit = [];
+        
                         // Just for reference
                         // On March/April of 2021, it was discussed that instead of a linear way of updating shipment status,
                         // we'll follow wherever the truck is. 
                         // Before: Assigned -> Queueing -> Processing -> Idling -> In Transit -> Complete
                         // After: Assigned -> Queueing -> Processing -> Queueing -> Idling -> Processing -> Queueing -> In Transit -> Complete
-
+        
                         
                         // extra function for objects
                         const OBJECT = {
@@ -319,18 +324,18 @@ exports.eventsCT1_Shipments = (req, res) => {
                         if(docs.length > 0){
                             // just save vehicle location then proceed to detecting new status
                             saveVehicleLocation(function(){
-
+        
                                 // loop through the dispatch entries
                                 for(var i = 0; i < docs.length; i++){
                                     // current entry's data
                                     const doc = docs[i];
-
+        
                                     // check if entry's origin geofence is the same as this event's geofence
                                     const isOrigin = (gDoc._id.toString()==doc.origin_id.toString());
-
+        
                                     // check if entry's destination geofence is the same as this event's geofence
                                     const isDestination = (gDoc._id.toString()==doc.destination.location_id.toString());
-
+        
                                     // this function checks if TEXT contains strings inside ARR. "or" - at least one string in ARR; "and" - all strings in ARR
                                     function getIndexOf(arr,op){
                                         var cond = null;
@@ -343,7 +348,7 @@ exports.eventsCT1_Shipments = (req, res) => {
                                     
                                     // events captured of this shipment
                                     const events_captured = doc.events_captured || {};
-
+        
                                     // >>>>> ENTERED ORIGIN
                                     // check if there's no 'entered_origin' in events_captured yet
                                     const hasEnteredOrigin = OBJECT.getKeyByValue(events_captured,"entered_origin");
@@ -378,45 +383,75 @@ exports.eventsCT1_Shipments = (req, res) => {
                                             }
                                         }
             
-                                        // >>>>> IN TRANSIT
-                                        if(((query.RULE_NAME == "Inside Geofence" && query.stage == "end") || (query.RULE_NAME == "Outside Geofence" && query.stage == "start")) && doc.status != "in_transit" && isOrigin === true){
-                                            _ids.in_transit.push(doc._id);
-                                        }
-            
-                                        // >>>>> COMPLETE
-                                        // if the truck is at destination and shipment status is not assigned and complete
-                                        if(!["assigned","complete"].includes(doc.status) && isDestination === true){
-
-                                            // store _id of shipment for 'complete' status
-                                            _ids.complete.push(doc._id);
-
-                                            // if status is In Transit, ignore
-                                            if(doc.status == "in_transit"){} 
-                                            else {
-                                                
-                                                // get the last timestamp
-                                                const lastTimestamp = Object.keys(events_captured)
+                                    // >>>>> IN TRANSIT
+                                    if(((query.RULE_NAME == "Inside Geofence" && query.stage == "end") || (query.RULE_NAME == "Outside Geofence" && query.stage == "start")) && doc.status != "in_transit" && isOrigin === true){
+                                        _ids.in_transit.push(doc._id);
+                                    }
+        
+                                        // >>>>> ON-SITE
+                                    if(query.RULE_NAME == "Inside Geofence" && query.stage == "start" && isDestination === true){
+                                        
+                                        // store _id of shipment for 'onSite' status
+                                        _ids.onSite.push(doc._id);
+        
+                                        // if status is In Transit, ignore
+                                        if(doc.status == "in_transit"){} 
+                                        else {
+                                            // get the last timestamp
+                                            const lastTimestamp = Object.keys(events_captured)
                                                                     .map(key => { return Number(key); }) // return timestamp (converted to Number)
                                                                     .sort()   // sort values in ascending order
                                                                     .reverse() // reverse order (descending order)
                                                                     [0];  // get first value of array
-
-                                                // if lastTimestamp exists
-                                                if(lastTimestamp){
-                                                    // save necessary data to 'completeNotInTransit' object
-                                                    completeNotInTransit.push({
-                                                        _id: doc._id,
-                                                        timestamp: Number(lastTimestamp)
-                                                    });
-                                                }
+        
+                                            // if lastTimestamp exists
+                                            if(lastTimestamp){
+                                                // save necessary data to 'onSiteNotInTransit' object
+                                                onSiteNotInTransit.push({
+                                                    _id: doc._id,
+                                                    timestamp: Number(lastTimestamp)
+                                                });
                                             }
                                         }
                                     }
+        
+                                    // >>>>> RETURNING
+                                    if(((query.RULE_NAME == "Inside Geofence" && query.stage == "end") || (query.RULE_NAME == "Outside Geofence" && query.stage == "start")) && doc.status == "onSite" && isDestination === true){
+                                        _ids.returning.push(doc._id);
+                                    }
+            
+                                    // >>>>> COMPLETE
+                                    if(doc.status == "returning" && isOrigin === true){
+                                        _ids.complete.push(doc._id);
+                                    }
+        
+                                    // >>>>> INCOMPLETE
+                                    // if truck has returned to the origin without entering destination geofence - tag as INCOMPLETE
+                                    if(query.RULE_NAME == "Inside Geofence" && isOrigin === true && doc.status == "in_transit"){
+                                        
+                                        // get the last in_transit timestamp
+                                        const lastInTransitTimestamp = Object.keys(events_captured)
+                                                                        .map(key => { return (a[key] == "in_transit") ? Number(key) : null; }) // return timestamp if value is "in_transit", else null
+                                                                        .sort()   // sort values in ascending order
+                                                                        .reverse() // reverse order (descending order)
+                                                                        .filter(n => n); // remove all null values from array
+                                        
+                                        // if timestamp exists
+                                        if(lastInTransitTimestamp){
+                                            const minuteDifference = moment().diff(lastInTransitTimestamp, "minutes");
+        
+                                            // give 20 minutes time difference in case an event was sent to WD just seconds after truck left the origin geofence.
+                                            if(minuteDifference > 20){
+                                                timestampToSave.incomplete.push(doc._id);
+                                            }
+                                        }
+                                    }
+                                    }
                                 }
-
+        
                                 // merge all entry IDs
-                                const shipment_number = _ids.in_transit.concat(_ids.queueingAtOrigin).concat(_ids.processingAtOrigin).concat(_ids.idlingAtOrigin).concat(_ids.complete);
-
+                                const shipment_number = _ids.in_transit.concat(_ids.queueingAtOrigin).concat(_ids.processingAtOrigin).concat(_ids.idlingAtOrigin).concat(_ids.onSite).concat(_ids.returning).concat(_ids.complete).concat(_ids.incomplete);
+        
                                 if(shipment_number.length > 0){
                                     // if 'insertedId' is not null or undefined
                                     if(insertedId){
@@ -435,18 +470,18 @@ exports.eventsCT1_Shipments = (req, res) => {
                                     // proceed to save timestamps
                                     saveTimestamp();
                                 }
-
+        
                                 // functions that only saves/updates the events_captured. Status will not be changed.
                                 function saveTimestamp(){
                                     // loop object
                                     Object.keys(timestampToSave).forEach(function(status) {
                                         // if array has at least one (1) element
                                         if((timestampToSave[status]||[]).length > 0){
-
+        
                                             // store events captured with timestamp 
                                             var set = {};
                                             set[`events_captured.${finalTime.valueOf()}`] = status;
-
+        
                                             // add promise to childPromise
                                             childPromise.push( dispatchCollection.updateMany({"_id": {$in: timestampToSave[status]}}, { $set: set, }) );
                                         } else {
@@ -454,34 +489,34 @@ exports.eventsCT1_Shipments = (req, res) => {
                                             console.log(`None [${status}]`);
                                         }
                                     });
-
+        
                                     // proceed to update
                                     proceedToUpdate();
                                 }
-
+        
                                 
                                 // function that updates the dispatch entries
                                 // To be updated: status, departure_date, escalation levels
                                 function proceedToUpdate(){
                                     Object.keys(_ids).forEach(function(status) {
                                         if((_ids[status]||[]).length > 0){
-
+        
                                             // ------> will only save the status, history, and events_captured
                                             // add to 'set' object the changes
                                             const set = {};
-
+        
                                             set["status"] = status;
                                             // add timestamp key to entry's history
                                             set[`history.${finalTime.valueOf()}`] = `System - Status updated to '${status}'.`;
                                             // add timestamp key to entry's events_captured
                                             set[`events_captured.${finalTime.valueOf()}`] = status;
-
+        
                                             // add update to childpromise array
                                             childPromise.push( dispatchCollection.updateMany(
                                                 { "_id": { $in: _ids[status] } }, 
                                                 { 
                                                     $set: set,
-
+        
                                                     // every time the status changes, unset the delay escalations
                                                     $unset: {
                                                         escalation1: "",
@@ -490,8 +525,8 @@ exports.eventsCT1_Shipments = (req, res) => {
                                                     }
                                                 }
                                             ));
-
-
+        
+        
                                             // if the status is in_transit, there'll be additional updates
                                             if(status == "in_transit"){
                                                 // loop _ids for in_transit property
@@ -500,10 +535,10 @@ exports.eventsCT1_Shipments = (req, res) => {
                                                     const transit_time = ((docs.find(x => x._id == _id)||{}).route||{}).transit_time;
                                                     const hours = transit_time.hour;
                                                     const minutes = transit_time.minute;
-
+        
                                                     // add to 'newSet' object the changes
                                                     const newSet = {};
-
+        
                                                     // save departure date and etd
                                                     newSet[`departure_date`] = finalTime.toISOString();
                                                     newSet[`destination.0.etd`] = finalTime.toISOString();
@@ -512,34 +547,34 @@ exports.eventsCT1_Shipments = (req, res) => {
                                                     const eta = finalTime.add(Number(hours), 'hours').add(Number(minutes), 'minutes').toISOString();
                                                     // save the eta
                                                     newSet[`destination.0.eta`] = eta;
-
+        
                                                     // add update to childpromise array
                                                     childPromise.push( dispatchCollection.updateOne({ _id }, { $set: newSet }) );
                                                 });
                                             }
-
-                                            // if the status is complete and theres at least one (1) element in 'completeNotInTransit', there'll be additional updates
-                                            if(status == "complete" && (completeNotInTransit||[]).length > 0){
-
+        
+                                            // if the status is onSite and theres at least one (1) element in 'onSiteNotInTransit', there'll be additional updates
+                                            if(status == "onSite" && (onSiteNotInTransit||[]).length > 0){
+        
                                                 // loop array
-                                                completeNotInTransit.forEach(val => {
-
+                                                onSiteNotInTransit.forEach(val => {
+        
                                                     // add to 'newSet' object the changes
                                                     const newSet = {};
-
+        
                                                     // add timestamp key to entry's history based on the supposedly 'in transit time'
                                                     newSet[`events_captured.${val.timestamp}`] = "in_transit";
                                                     // add timestamp key to entry's events_captured based on the supposedly 'in transit time'
                                                     newSet[`history.${val.timestamp}`] = `System - Status updated to 'in_transit'.`;
-
+        
                                                     // get the target transit time based on route
                                                     const transit_time = ((docs.find(x => x._id == val._id)||{}).route||{}).transit_time;
                                                     const hours = transit_time.hour;
                                                     const minutes = transit_time.minute;
-
+        
                                                     // convert timestamp to moment()
                                                     const inTransitTimestamp = moment.tz(val.timestamp, undefined, timezone);
-
+        
                                                     // save departure date and etd
                                                     newSet[`departure_date`] = inTransitTimestamp.toISOString();
                                                     newSet[`destination.0.etd`] = inTransitTimestamp.toISOString();
@@ -548,7 +583,7 @@ exports.eventsCT1_Shipments = (req, res) => {
                                                     const eta = inTransitTimestamp.add(Number(hours), 'hours').add(Number(minutes), 'minutes').toISOString();
                                                     // save the eta
                                                     newSet[`destination.0.eta`] = eta;
-
+        
                                                     // add update to childpromise array
                                                     childPromise.push( dispatchCollection.updateOne({ _id: val._id }, { $set: newSet }) );
                                                 });
@@ -558,12 +593,12 @@ exports.eventsCT1_Shipments = (req, res) => {
                                             console.log(`None [${status}]`);
                                         }
                                     });
-
+        
                                     // if there's at least one (1) promise to execute
                                     if(childPromise.length > 0){
                                         // print for debugging
                                         console.log("Child promises:",childPromise.length);
-
+        
                                         // execute promises
                                         Promise.all(childPromise).then(data => {
                                             // print for debugging
@@ -624,4 +659,4 @@ exports.eventsCT1_Shipments = (req, res) => {
         // return error
         res.status(500).send('Error in CO: ' + JSON.stringify(error));
     });
-};
+});

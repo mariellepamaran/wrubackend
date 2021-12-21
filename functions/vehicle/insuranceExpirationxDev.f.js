@@ -8,6 +8,8 @@
  * This function will be called every 1st of the month
  * 
  */
+
+const functions = require('firebase-functions');
 const co = require('co');
 const mongodb = require('mongodb');
 const moment = require('moment-timezone');
@@ -22,18 +24,14 @@ const transporter = nodemailer.createTransport({
     },
 });
 
+
 // PRODUCTION
 // const uri = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
 // DEVELOPMENT
 const uri = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
-
-exports.vehicleInsuranceExpirationxDev = (req, res) => {
-    // set the response HTTP header
-    res.set('Content-Type', 'application/json');
-    res.set('Access-Control-Allow-Origin', '*');
-    res.set('Access-Control-Allow-Headers', '*');
-    res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-
+ 
+exports = module.exports = functions.region('asia-east2').runWith({ timeoutSeconds: 60, memory: '128MB' }).https.onRequest((req, res) => {
+  
     co(function*() {
         
         /************** Variable Initialization **************/
@@ -54,7 +52,7 @@ exports.vehicleInsuranceExpirationxDev = (req, res) => {
             "wm-wilcon": null
         };
         const CLIENT_OPTIONS = {
-            "wm-wilcon": { otherDb: "wd-wilcon" }
+            "wm-wilcon": { otherDb: "wilcon" }
         };
 
 
@@ -72,11 +70,12 @@ exports.vehicleInsuranceExpirationxDev = (req, res) => {
         function process(clientName) {
             // initialize database
             const db = client.db(clientName);
-            const otherDb = client.db(CLIENT_OPTIONS[clientName].otherDb);
-            const vehiclesCollection = otherDb.collection('vehicles');
             const insuranceCollection = db.collection('insurance');
             const insuranceListCollection = db.collection('insurance_list');
             const insuranceClassCollection = db.collection('insurance_class');
+            
+            const otherDb = client.db(CLIENT_OPTIONS[clientName].otherDb);
+            const vehiclesCollection = otherDb.collection('vehicles');
 
             // retrieve all vehicles List 
             vehiclesCollection.find({}).toArray().then(vDocs => {
@@ -323,4 +322,4 @@ exports.vehicleInsuranceExpirationxDev = (req, res) => {
         // return error
         res.status(500).send('Error in CO: ' + JSON.stringify(error));
     });
-};
+});

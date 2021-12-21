@@ -52,11 +52,13 @@ exports.eventsCT1xDev = (req, res) => {
         console.log("Filtered:",`${query.GEOFENCE_NAME} - ${query.USER_NAME} (${query.USER_USERNAME})`);
         
         // initialize database
-        const dbName = "wd-coket1";
-        const db = client.db(dbName);
-        const dbLogging = client.db(`${dbName}-logging`);
-        const vehiclesCollection = db.collection('vehicles');
+        const dbName = "coket1";
+
+        const dbLogging = client.db(`wd-${dbName}-logging`);
         const eventsCollection = dbLogging.collection('events');
+
+        const otherDb = client.db(dbName);
+        const vehiclesCollection = otherDb.collection('vehicles');
 
         // date and time variables (moment)
         const startTime = moment.tz(query["Event start time"]+"Z", undefined, timezone).toISOString();

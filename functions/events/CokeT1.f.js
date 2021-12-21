@@ -1,5 +1,5 @@
 /**
- * eventsCT1
+ * eventsCokeT1
  * 
  * >> This function's main goal is to save the event data to the database <<
  * 
@@ -7,21 +7,17 @@
  * 
  */
 
+const functions = require('firebase-functions');
 const co = require('co');
 const mongodb = require('mongodb');
 const ObjectId = require('mongodb').ObjectID;
 const moment = require('moment-timezone');
 const request = require('request');
-
+ 
 // database url (production)
 const uri = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
 
-exports.eventsCT1 = (req, res) => {
-    // set the response HTTP header
-    res.set('Content-Type','application/json');
-    res.set('Access-Control-Allow-Origin', '*');
-    res.set('Access-Control-Allow-Headers', '*');
-    res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+exports = module.exports = functions.region('asia-east2').runWith({ timeoutSeconds: 60, memory: '128MB' }).https.onRequest((req, res) => {
 
     // call the development version of this function
     try {
@@ -29,15 +25,15 @@ exports.eventsCT1 = (req, res) => {
         const queryString = Object.keys(req.query).map(key => key + '=' + req.query[key]).join('&');
         request({
             method: 'GET',
-            url: `https://asia-east2-secure-unison-275408.cloudfunctions.net/eventsCT1xDev?${queryString}`,
+            url: `https://asia-east2-secure-unison-275408.cloudfunctions.net/eventsCokeT1XDev?${queryString}`,
         });
     } catch (error){
         console.log("Request Error",error);
     }
 
     // declare event urls
-    const eventShipmentURL = "https://asia-east2-secure-unison-275408.cloudfunctions.net/eventsCT1_Shipments";
-    const eventCICOURL = "https://asia-east2-secure-unison-275408.cloudfunctions.net/eventsCT1_CICO";
+    const eventShipmentURL = "https://asia-east2-secure-unison-275408.cloudfunctions.net/eventsCokeT1Shipments";
+    const eventCICOURL = "https://asia-east2-secure-unison-275408.cloudfunctions.net/eventsCokeT1Cico";
 
     co(function*() {
         
@@ -62,11 +58,13 @@ exports.eventsCT1 = (req, res) => {
         console.log("Filtered:",`${query.GEOFENCE_NAME} - ${query.USER_NAME} (${query.USER_USERNAME})`);
         
         // initialize database
-        const dbName = "wd-coket1";
-        const db = client.db(dbName);
-        const dbLogging = client.db(`${dbName}-logging`);
-        const vehiclesCollection = db.collection('vehicles');
+        const dbName = "coket1";
+
+        const dbLogging = client.db(`wd-${dbName}-logging`);
         const eventsCollection = dbLogging.collection('events');
+
+        const otherDb = client.db(dbName);
+        const vehiclesCollection = otherDb.collection('vehicles');
 
         // date and time variables (moment)
         const startTime = moment.tz(query["Event start time"]+"Z", undefined, timezone).toISOString();
@@ -123,21 +121,21 @@ exports.eventsCT1 = (req, res) => {
                     console.log("Request Error",error);
                 }
 
-                // Call CICO function
-                try {
-                    // add 'insertedId' to query to send to CICO function
-                    req.query.insertedId = insertedId;
-                    // add 'newObjectId' to query to send to CICO function
-                    req.query.newObjectId = newObjectId;
-                    // convert object to url parameter string
-                    const queryString = Object.keys(req.query).map(key => key + '=' + req.query[key]).join('&');
-                    request({
-                        method: 'GET',
-                        url: `${eventCICOURL}?${queryString}`,
-                    });
-                } catch (error){
-                    console.log("Request Error",error);
-                }
+                // // Call CICO function
+                // try {
+                //     // add 'insertedId' to query to send to CICO function
+                //     req.query.insertedId = insertedId;
+                //     // add 'newObjectId' to query to send to CICO function
+                //     req.query.newObjectId = newObjectId;
+                //     // convert object to url parameter string
+                //     const queryString = Object.keys(req.query).map(key => key + '=' + req.query[key]).join('&');
+                //     request({
+                //         method: 'GET',
+                //         url: `${eventCICOURL}?${queryString}`,
+                //     });
+                // } catch (error){
+                //     console.log("Request Error",error);
+                // }
 
                 // close the mongodb client connection
                 client.close();
@@ -172,4 +170,4 @@ exports.eventsCT1 = (req, res) => {
         // return error
         res.status(500).send('Error in CO: ' + JSON.stringify(error));
     });
-};
+});

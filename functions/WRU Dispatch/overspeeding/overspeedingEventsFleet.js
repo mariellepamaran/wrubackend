@@ -36,10 +36,6 @@ exports.overspeedingEventsFleet = (req, res) => {
         console.log("Request Error",error);
     }
 
-    // declare event urls
-    // const eventShipmentURL = "https://asia-east2-secure-unison-275408.cloudfunctions.net/eventsCT1_Shipments";
-    // const eventCICOURL = "https://asia-east2-secure-unison-275408.cloudfunctions.net/eventsCT1_CICO";
-
     co(function*() {
         
         /************** Variable Initialization **************/

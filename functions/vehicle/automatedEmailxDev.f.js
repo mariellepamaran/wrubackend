@@ -28,8 +28,8 @@ const uri = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27
 
 // list of cc receivers
 const emails = {
-    "wd-coket1": ["mariellepamaran@gmail.com"],
-    "wd-coket2": ["mariellepamaran@gmail.com"],
+    "coket1": ["mariellepamaran@gmail.com"],
+    "coket2": ["mariellepamaran@gmail.com"],
 };
  
 exports = module.exports = functions.region('asia-east2').runWith({ timeoutSeconds: 60, memory: '128MB' }).https.onRequest((req, res) => {
@@ -52,12 +52,12 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
 
         // list of clients. Key is usually the db name
         const CLIENTS = {
-            "wd-coket1":null,
-            "wd-coket2":null,
+            "coket1":null,
+            "coket2":null,
         };
         const CLIENT_OPTIONS = {
-            "wd-coket1": { name: "CokeT1", cc: emails['wd-coket1'] },
-            "wd-coket2": { name: "CokeT2", cc: emails['wd-coket2'] },
+            "coket1": { name: "CokeT1", cc: emails['coket1'] },
+            "coket2": { name: "CokeT2", cc: emails['coket2'] },
         };
 
         var hasError = false; // check if there were error/s during process(). 

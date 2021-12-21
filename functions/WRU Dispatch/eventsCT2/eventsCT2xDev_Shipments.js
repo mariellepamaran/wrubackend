@@ -57,12 +57,16 @@ exports.eventsCT2xDev_Shipments = (req, res) => {
         console.log("Filtered:",`${query.GEOFENCE_NAME} - ${query.USER_NAME} (${query.USER_USERNAME})`);
 
         // initialize database
-        const dbName = "wd-coket2";
-        const db = client.db(dbName);
-        const dbLogging = client.db(`${dbName}-logging`);
-        const eventsCollection = dbLogging.collection('events');
-        const vehiclesHistoryCollection = db.collection('vehicles_history');
+        const dbName = "coket2";
+        const db = client.db('wd-'+dbName);
         const dispatchCollection = db.collection('dispatch');
+
+        const dbLogging = client.db(`wd-${dbName}-logging`);
+        const eventsCollection = dbLogging.collection('events');
+        
+        const otherDb = client.db(dbName);
+        const geofencesCollection = otherDb.collection('geofences');
+        const vehiclesHistoryCollection = otherDb.collection('vehicles_history');
 
         // function that retrieves the original address
         // Eg. 
@@ -166,251 +170,274 @@ exports.eventsCT2xDev_Shipments = (req, res) => {
                 });
             }
 
-            // find dispatch entries based on the complex queries
-            dispatchCollection.aggregate([
-                // status must not be plan, complete, or incomplete
-                {
-                    $match: {
-                        status: {
-                            $nin: ["plan","complete","incomplete"]
-                        }
-                    }
-                },
-                // vehicle must be the same as this event's vehicle
-                { 
-                    $lookup: {
-                        from: 'vehicles',
-                        let: { 
-                            vehicle_id: "$vehicle_id", 
-                        },
-                        pipeline: [
-                            {
-                                $match: {
-                                    $and: [
-                                        {
-                                            "username": query.USER_USERNAME
-                                        },
-                                        {
-                                            $expr: {
-                                                $eq: ["$_id","$$vehicle_id"]
-                                            }
-                                        }
-                                    ]
-                                }
+            // get geofence data of this event
+            geofencesCollection.find({ short_name: GEOFENCE_NAME }).toArray().then(gDocs => {
+
+                const gDoc = gDocs[0];
+
+                if(gDoc){
+
+                    // find dispatch entries based on the complex queries
+                    dispatchCollection.aggregate([
+                        // status must not be plan, complete, or incomplete
+                        {
+                            $match: {
+                                status: {
+                                    $nin: ["plan","complete","incomplete"]
+                                },
+                                vehicle_id: Number(query.ASSIGNED_VEHICLE_ID),
+                                $or: [
+                                    {
+                                      'destination.0.location_id': ObjectId(gDoc._id)
+                                    },
+                                    {
+                                      'origin_id': ObjectId(gDoc._id)
+                                    }
+                                ]
                             }
-                        ],
-                        as: 'vehicle',
-                    }
-                },
-                // origin geofence must be the same as this event's geofence
-                { 
-                    $lookup: {
-                        from: 'geofences',
-                        let: { 
-                            origin_id: "$origin_id", 
                         },
-                        pipeline: [
-                            {
-                                $match: {
-                                    $and: [
-                                        {
-                                            "short_name": GEOFENCE_NAME
-                                        },
-                                        {
-                                            $expr: {
-                                                $or: [
-                                                    {$eq: ["$_id","$$origin_id"]},
-                                                ]
-                                            }
-                                        }
-                                    ]
-                                }
-                            }
-                        ],
-                        as: 'geofence',
-                    }
-                },
-                { $unwind: "$vehicle" }, // do not preserveNull. vehicle is required 
-                { $unwind: "$geofence" }, // do not preserveNull. geofence is required 
-            ]).toArray().then(docs => {
+                        // // vehicle must be the same as this event's vehicle
+                        // { 
+                        //     $lookup: {
+                        //         from: 'vehicles',
+                        //         let: { 
+                        //             vehicle_id: "$vehicle_id", 
+                        //         },
+                        //         pipeline: [
+                        //             {
+                        //                 $match: {
+                        //                     $and: [
+                        //                         {
+                        //                             "username": query.USER_USERNAME
+                        //                         },
+                        //                         {
+                        //                             $expr: {
+                        //                                 $eq: ["$_id","$$vehicle_id"]
+                        //                             }
+                        //                         }
+                        //                     ]
+                        //                 }
+                        //             }
+                        //         ],
+                        //         as: 'vehicle',
+                        //     }
+                        // },
+                        // // origin geofence must be the same as this event's geofence
+                        // { 
+                        //     $lookup: {
+                        //         from: 'geofences',
+                        //         let: { 
+                        //             origin_id: "$origin_id", 
+                        //         },
+                        //         pipeline: [
+                        //             {
+                        //                 $match: {
+                        //                     $and: [
+                        //                         {
+                        //                             "short_name": GEOFENCE_NAME
+                        //                         },
+                        //                         {
+                        //                             $expr: {
+                        //                                 $or: [
+                        //                                     {$eq: ["$_id","$$origin_id"]},
+                        //                                 ]
+                        //                             }
+                        //                         }
+                        //                     ]
+                        //                 }
+                        //             }
+                        //         ],
+                        //         as: 'geofence',
+                        //     }
+                        // },
+                        // { $unwind: "$vehicle" }, // do not preserveNull. vehicle is required 
+                        // { $unwind: "$geofence" }, // do not preserveNull. geofence is required 
+                    ]).toArray().then(docs => {
 
-                // store dispatch _ids
-                const _ids = {
-                    assigned: [],
-                    onDelivery: [],
-                    complete: []
-                };
-                
-                // if there's at least one (1) dispatch entry, 
-                if(docs.length > 0){
-                    // just save vehiccle location then proceed to detecting new status
-                    saveVehicleLocation(function(){
-
-                        // loop through the dispatch entries
-                        for(var i = 0; i < docs.length; i++){
-                            // current entry's data
-                            const doc = docs[i];
-
-                            // check if entry's origin geofence is the same as this event's geofence
-                            const isOrigin = (doc.geofence._id.toString()==doc.origin_id.toString());
-
-                            // check if entry's truck's base site is the same as this event's geofence
-                            const isTruckBaseSite = TRUCK_SITE == GEOFENCE_NAME;
+                        // store dispatch _ids
+                        const _ids = {
+                            assigned: [],
+                            onDelivery: [],
+                            complete: []
+                        };
                         
-                            // Just a reminder
-                            // The "Check Out" event is like 'enroute' event. Instead of wanting to know how long the truck stayed at the geofence,
-                            // it wants to know how long it took the truck to travel from one location to another
-                            // Eg. 
-                            // Check Out (Start) (2:00 PM): CNL PL
-                            // Check Out (End) (3:00 PM): STAROSA PL
-                            // Meaning, the truck LEFT CNL PL at 2:00 PM and ARRIVED in STAROSA PL at 3:00 PM
-                            // It's like the opposite logic with CokeT1's "Inside Geofence" event
+                        // if there's at least one (1) dispatch entry, 
+                        if(docs.length > 0){
+                            // just save vehiccle location then proceed to detecting new status
+                            saveVehicleLocation(function(){
+
+                                // loop through the dispatch entries
+                                for(var i = 0; i < docs.length; i++){
+                                    // current entry's data
+                                    const doc = docs[i];
+
+                                    // check if entry's origin geofence is the same as this event's geofence
+                                    const isOrigin = (gDoc._id.toString()==doc.origin_id.toString());
+
+                                    // check if entry's truck's base site is the same as this event's geofence
+                                    const isTruckBaseSite = TRUCK_SITE == GEOFENCE_NAME;
+                                
+                                    // Just a reminder
+                                    // The "Check Out" event is like 'enroute' event. Instead of wanting to know how long the truck stayed at the geofence,
+                                    // it wants to know how long it took the truck to travel from one location to another
+                                    // Eg. 
+                                    // Check Out (Start) (2:00 PM): CNL PL
+                                    // Check Out (End) (3:00 PM): STAROSA PL
+                                    // Meaning, the truck LEFT CNL PL at 2:00 PM and ARRIVED in STAROSA PL at 3:00 PM
+                                    // It's like the opposite logic with CokeT1's "Inside Geofence" event
 
 
-                            // so it's less confusing, the 'arriving' and 'leaving' condition is stored in the following variables
-                            const arrivedAtGeofence = (query.RULE_NAME == "Check Out" && query.stage == "end");
-                            const leftGeofence = (query.RULE_NAME == "Check Out" && query.stage == "start");
+                                    // so it's less confusing, the 'arriving' and 'leaving' condition is stored in the following variables
+                                    const arrivedAtGeofence = (query.RULE_NAME == "Check Out" && query.stage == "end");
+                                    const leftGeofence = (query.RULE_NAME == "Check Out" && query.stage == "start");
 
-                            console.log("HERE",
-                                        `ID: ${doc._id}`,
-                                        `arrivedAtGeofence: ${arrivedAtGeofence}`,
-                                        `leftGeofence: ${leftGeofence}`,
-                                        `Status: ${doc.status}`,
-                                        `isOrigin: ${isOrigin}`,
-                                        `isTruckBaseSite: ${isTruckBaseSite}`);
+                                    console.log("HERE",
+                                                `ID: ${doc._id}`,
+                                                `arrivedAtGeofence: ${arrivedAtGeofence}`,
+                                                `leftGeofence: ${leftGeofence}`,
+                                                `Status: ${doc.status}`,
+                                                `isOrigin: ${isOrigin}`,
+                                                `isTruckBaseSite: ${isTruckBaseSite}`);
 
-                            // Status logic is based on Coke's T2_Dispatch_Matrix.xlsx file
-                            // // assigned
-                            // if(arrivedAtGeofence && doc.status != "assigned" && isOrigin === true){
-                            //     _ids.assigned.push(doc._id);
-                            // }
-                            // // end assigned
-
-
-                            // onDelivery
-                            if(leftGeofence && ["assigned"].includes(doc.status) && isOrigin === true){
-                                _ids.onDelivery.push(doc._id);
-                            }
-                            // end onDelivery
+                                    // Status logic is based on Coke's T2_Dispatch_Matrix.xlsx file
+                                    // // assigned
+                                    // if(arrivedAtGeofence && doc.status != "assigned" && isOrigin === true){
+                                    //     _ids.assigned.push(doc._id);
+                                    // }
+                                    // // end assigned
 
 
-                            // complete
-                            if(doc.support_unit === "Yes") {
-                                // origin site
-                                if(arrivedAtGeofence && doc.status == "onDelivery" && isOrigin === true){
-                                    _ids.complete.push(doc._id);
+                                    // onDelivery
+                                    if(leftGeofence && ["assigned"].includes(doc.status) && isOrigin === true){
+                                        _ids.onDelivery.push(doc._id);
+                                    }
+                                    // end onDelivery
+
+
+                                    // complete
+                                    if(doc.support_unit === "Yes") {
+                                        // origin site
+                                        if(arrivedAtGeofence && doc.status == "onDelivery" && isOrigin === true){
+                                            _ids.complete.push(doc._id);
+                                        }
+                                    } else {
+                                        // truck base site
+                                        if(arrivedAtGeofence && doc.status == "onDelivery" && isTruckBaseSite === true){
+                                            _ids.complete.push(doc._id);
+                                        }
+                                    }
+                                    // end complete
                                 }
-                            } else {
-                                // truck base site
-                                if(arrivedAtGeofence && doc.status == "onDelivery" && isTruckBaseSite === true){
-                                    _ids.complete.push(doc._id);
-                                }
-                            }
-                            // end complete
-                        }
-    
-                        // merge all entry IDs
-                        const shipment_number = _ids.onDelivery.concat(_ids.assigned).concat(_ids.complete);
-    
-                        if(shipment_number.length > 0){
-                            // if 'insertedId' is not null or undefined
-                            if(insertedId){
-                                // update events - add list of dispatch entry ids that were affected by this event
-                                eventsCollection.updateOne({_id: ObjectId(insertedId)},{ $set: { shipment_number } }).then(docs => {
+            
+                                // merge all entry IDs
+                                const shipment_number = _ids.onDelivery.concat(_ids.assigned).concat(_ids.complete);
+            
+                                if(shipment_number.length > 0){
+                                    // if 'insertedId' is not null or undefined
+                                    if(insertedId){
+                                        // update events - add list of dispatch entry ids that were affected by this event
+                                        eventsCollection.updateOne({_id: ObjectId(insertedId)},{ $set: { shipment_number } }).then(docs => {
+                                            // proceed to update the dispatch entries
+                                            proceedToUpdate();
+                                        }).catch(error => {
+                                            isDone('Events (Update)',error);
+                                        }); 
+                                    } else {
+                                        // proceed to update the dispatch entries
+                                        proceedToUpdate();
+                                    }
+                                } else {
                                     // proceed to update the dispatch entries
                                     proceedToUpdate();
-                                }).catch(error => {
-                                    isDone('Events (Update)',error);
-                                }); 
-                            } else {
-                                // proceed to update the dispatch entries
-                                proceedToUpdate();
-                            }
-                        } else {
-                            // proceed to update the dispatch entries
-                            proceedToUpdate();
-                        }
+                                }
 
 
-    
-                        // function that updates the dispatch entries
-                        // To be updated: status, departure_date, escalation levels
-                        function proceedToUpdate(){
+            
+                                // function that updates the dispatch entries
+                                // To be updated: status, departure_date, escalation levels
+                                function proceedToUpdate(){
 
-                            // loop through each '_ids' object properties
-                            Object.keys(_ids).forEach(status => {
-                                // if object status has at least 1 entry
-                                if((_ids[status]||[]).length > 0){
+                                    // loop through each '_ids' object properties
+                                    Object.keys(_ids).forEach(status => {
+                                        // if object status has at least 1 entry
+                                        if((_ids[status]||[]).length > 0){
 
-                                    // add to 'set' object the changes
-                                    const set = {};
+                                            // add to 'set' object the changes
+                                            const set = {};
 
-                                    set["status"] = status;
-                                    // add timestamp key to entry's history
-                                    set[`history.${finalTime.valueOf()}`] = `System - Status updated to '${status}'.`;
-                                    // add timestamp key to entry's events_captured
-                                    set[`events_captured.${finalTime.valueOf()}`] = status;
+                                            set["status"] = status;
+                                            // add timestamp key to entry's history
+                                            set[`history.${finalTime.valueOf()}`] = `System - Status updated to '${status}'.`;
+                                            // add timestamp key to entry's events_captured
+                                            set[`events_captured.${finalTime.valueOf()}`] = status;
 
-                                    // add update to childpromise array
-                                    childPromise.push( dispatchCollection.updateMany(
-                                        { "_id": { $in: _ids[status] } }, 
-                                        { 
-                                            $set: set, 
-
-                                            // every time the status changes, unset the delay escalations
-                                            $unset: {
-                                                escalation1: "",
-                                                escalation2: "",
-                                                escalation3: ""
-                                            }
-                                        }
-                                    ));
-
-                                    // if entry is on delivery, save the departure date
-                                    if(status == "onDelivery"){
-                                        // loop per status of _ids object
-                                        _ids[status].forEach(_id => {
-                                            childPromise.push( dispatchCollection.updateOne(
-                                                { _id }, 
+                                            // add update to childpromise array
+                                            childPromise.push( dispatchCollection.updateMany(
+                                                { "_id": { $in: _ids[status] } }, 
                                                 { 
-                                                    $set: {
-                                                        departure_date: finalTime.toISOString()
+                                                    $set: set, 
+
+                                                    // every time the status changes, unset the delay escalations
+                                                    $unset: {
+                                                        escalation1: "",
+                                                        escalation2: "",
+                                                        escalation3: ""
                                                     }
                                                 }
                                             ));
+
+                                            // if entry is on delivery, save the departure date
+                                            if(status == "onDelivery"){
+                                                // loop per status of _ids object
+                                                _ids[status].forEach(_id => {
+                                                    childPromise.push( dispatchCollection.updateOne(
+                                                        { _id }, 
+                                                        { 
+                                                            $set: {
+                                                                departure_date: finalTime.toISOString()
+                                                            }
+                                                        }
+                                                    ));
+                                                });
+                                            }
+                                        } else {
+                                            // print text. Can delete this anytime
+                                            console.log(`None [${status}]`);
+                                        }
+                                    });
+                                    
+                                    if(childPromise.length > 0){
+                                        console.log("childPromise length: ",childPromise.length);
+                                        // execute the Promise.all() method
+                                        Promise.all(childPromise).then(data => {
+                                            console.log("Promise: ",JSON.stringify(data));
+                                            isDone();
+                                        }).catch(error => {
+                                            isDone('Promise',error);
                                         });
+                                    } else {
+                                        console.log("Empty Promise");
+                                        isDone();
                                     }
-                                } else {
-                                    // print text. Can delete this anytime
-                                    console.log(`None [${status}]`);
                                 }
                             });
-                            
-                            if(childPromise.length > 0){
-                                console.log("childPromise length: ",childPromise.length);
-                                // execute the Promise.all() method
-                                Promise.all(childPromise).then(data => {
-                                    console.log("Promise: ",JSON.stringify(data));
-                                    isDone();
-                                }).catch(error => {
-                                    isDone('Promise',error);
-                                });
-                            } else {
-                                console.log("Empty Promise");
+                        } else {
+                            // just save vehiccle location then resolve function
+                            saveVehicleLocation(function(){
                                 isDone();
-                            }
+                            });
                         }
-                    });
+                    }).catch(error => {
+                        isDone('Dispatch (Find)',error);
+                    }); 
+
                 } else {
-                    // just save vehiccle location then resolve function
+                    // just save the location data
                     saveVehicleLocation(function(){
                         isDone();
                     });
                 }
-            }).catch(error => {
-                isDone('Dispatch (Find)',error);
-            }); 
-
+            });
 
             
             // will resolve the function depending if there was an error or not. Also, this will display the error if an error is passed

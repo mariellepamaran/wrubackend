@@ -146,10 +146,8 @@ exports.orderUpdatexDev = (req, res) => {
                                     }
                                 });
                             });
-                        }
-                        
-                        // **PMS**
-                        if(query.service_type == "pms"){
+                        } else {
+                            // **PMS**
                             
                             /*
                                 DB Structure for PMS
@@ -160,7 +158,7 @@ exports.orderUpdatexDev = (req, res) => {
                             */
 
                             // loop through parts array of each category
-                                Object.keys(doc.category[key].parts||{}).forEach(line_id => {
+                            Object.keys(doc.parts||{}).forEach(line_id => {
 
                                 // check if part's line id is equal to param's line id
                                 if(line_id == query.line_id){
@@ -179,6 +177,7 @@ exports.orderUpdatexDev = (req, res) => {
                                 }
                             });
                         }
+                        
 
                         // update db if only there's at least one (1) thing to update
                         if(Object.keys(set).length > 0){

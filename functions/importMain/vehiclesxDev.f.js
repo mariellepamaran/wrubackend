@@ -22,11 +22,11 @@ const request = require('request');
 // to continue the request for the next X number of data. 
 // Page Index will reset to 0 if the function already reached the last data from WRU Main
 const pageIndexClient = {
-    "wd-coket1": 0,
-    "wd-coket1|fromT2": 0,
-    "wd-coket2": 0,
-    "wd-fleet":  0,
-    "wd-wilcon": 0,
+    "coket1": 0,
+    "coket1|fromT2": 0,
+    "coket2": 0,
+    "fleet":  0,
+    "wilcon": 0,
     "pldt": 0,
 };
 
@@ -50,20 +50,20 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
 
         // list of clients. Key is usually the db name
         const CLIENTS = {
-            "wd-coket1": null,
-            "wd-coket1|fromT2": null,
-            "wd-coket2": null,
-            "wd-fleet":  null,
-            "wd-wilcon": null,
+            "coket1": null,
+            "coket1|fromT2": null,
+            "coket2": null,
+            "fleet":  null,
+            "wilcon": null,
             // "pldt": null,
         };
         const CLIENT_OPTIONS = {
-            // "wd-coket1|fromT2" - we are getting other info from CokeT2 (base T1 on TagId)
-            "wd-coket1": {           ggsURL: "coca-cola.server93.com",    appId: 9,      username: "wru_marielle",    password: "467388",           tagId: null,    customfields: ["Trailer","Tractor Conduction","Base Site Code","Base Site","Equipment Number","Availability","Pal Cap","Site","Site Code"]                     },
-            "wd-coket1|fromT2": {    ggsURL: "coca-cola.server93.com",    appId: 4,      username: "wru_marielle",    password: "467388",           tagId: 630,     customfields: ["Offline Remark"]    }, // TagId: "ALL T1"
-            "wd-coket2": {           ggsURL: "coca-cola.server93.com",    appId: 4,      username: "wru_marielle",    password: "467388",           tagId: 27,      customfields: ["Trailer","Tractor Conduction","Base Site Code","Base Site","Equipment Number","Availability","Pal Cap","Site","Site Code","Offline Remark"]    }, // TagId: "ALL T2"
-            "wd-fleet":  {           ggsURL: "coca-cola.server93.com",    appId: 14,     username: "wru_marielle",    password: "467388",           tagId: null,    customfields: ["CN1","CN2","Fuel Capacity","Truck Model"]                                                                                                      },
-            "wd-wilcon": {           ggsURL: "wru.server93.com",          appId: 427,    username: "wru_marielle",    password: "ilovecats",        tagId: 8634,    customfields: ["Truck Number","Plate Number"]                                                                                                                  }, // TagID: "ALL"
+            // "coket1|fromT2" - we are getting other info from CokeT2 (base T1 on TagId)
+            "coket1": {           ggsURL: "coca-cola.server93.com",    appId: 9,      username: "wru_marielle",    password: "467388",           tagId: null,    customfields: ["Trailer","Tractor Conduction","Base Site Code","Base Site","Equipment Number","Availability","Pal Cap","Site","Site Code"]                     },
+            "coket1|fromT2": {    ggsURL: "coca-cola.server93.com",    appId: 4,      username: "wru_marielle",    password: "467388",           tagId: 630,     customfields: ["Offline Remark"]    }, // TagId: "ALL T1"
+            "coket2": {           ggsURL: "coca-cola.server93.com",    appId: 4,      username: "wru_marielle",    password: "467388",           tagId: 27,      customfields: ["Trailer","Tractor Conduction","Base Site Code","Base Site","Equipment Number","Availability","Pal Cap","Site","Site Code","Offline Remark"]    }, // TagId: "ALL T2"
+            "fleet":  {           ggsURL: "coca-cola.server93.com",    appId: 14,     username: "wru_marielle",    password: "467388",           tagId: null,    customfields: ["CN1","CN2","Fuel Capacity","Truck Model"]                                                                                                      },
+            "wilcon": {              ggsURL: "wru.server93.com",          appId: 427,    username: "wru_marielle",    password: "ilovecats",        tagId: 8634,    customfields: ["Truck Number","Plate Number"]                                                                                                                  }, // TagID: "ALL"
             "pldt": {                ggsURL: "pldt.server93.com",         appId: 208,    username: "wru_dev",         password: "iwanttomukbang",   tagId: null,    customfields: []                                                                                                                  },
         };
 

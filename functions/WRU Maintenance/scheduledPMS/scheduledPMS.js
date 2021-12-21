@@ -58,7 +58,7 @@ exports.scheduledPMS = (req, res) => {
             "wm-wilcon":null,
         };
         const CLIENT_OPTIONS = {
-            "wm-wilcon": { otherDb: "wd-wilcon" }
+            "wm-wilcon": { otherDb: "wilcon" }
         };
 
         // array of promises
@@ -75,8 +75,9 @@ exports.scheduledPMS = (req, res) => {
         function process(clientName){
             // initialize database
             const db = client.db(clientName);
-            const otherDb = client.db(CLIENT_OPTIONS[clientName].otherDb);
             const pmsRequestsCollection = db.collection('pms_requests');
+            
+            const otherDb = client.db(CLIENT_OPTIONS[clientName].otherDb);
             const vehiclesCollection = otherDb.collection('vehicles');
 
             // alerting the users with this number of days before the next scheduled date

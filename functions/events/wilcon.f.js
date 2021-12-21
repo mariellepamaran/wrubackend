@@ -1,5 +1,5 @@
 /**
- * eventsCT2
+ * eventsWilcon
  * 
  * >> This function's main goal is to save the event data to the database <<
  * 
@@ -7,25 +7,31 @@
  * 
  */
 
+const functions = require('firebase-functions');
 const co = require('co');
 const mongodb = require('mongodb');
 const moment = require('moment-timezone');
 const request = require('request');
+ 
+// database url (production)
+const uri = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
 
-// PRODUCTION
-// const uri = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
-// DEVELOPMENT
-const uri = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
+exports = module.exports = functions.region('asia-east2').runWith({ timeoutSeconds: 60, memory: '128MB' }).https.onRequest((req, res) => {
 
-exports.eventsCT2xDev = (req, res) => {
-    // set the response HTTP header
-    res.set('Content-Type','application/json');
-    res.set('Access-Control-Allow-Origin', '*');
-    res.set('Access-Control-Allow-Headers', '*');
-    res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+    // call dev api
+    try {
+        // convert object to url parameter string
+        const queryString = Object.keys(req.query).map(key => key + '=' + req.query[key]).join('&');
+        request({
+            method: 'GET',
+            url: `https://asia-east2-secure-unison-275408.cloudfunctions.net/eventsWilconxDev?${queryString}`,
+        });
+    } catch (error){
+        console.log("Request Error",error);
+    }
 
     // declare event urls
-    const eventShipmentURL = "https://asia-east2-secure-unison-275408.cloudfunctions.net/eventsCT2xDev_Shipments";
+    const eventShipmentURL = "https://asia-east2-secure-unison-275408.cloudfunctions.net/eventsWilconShipments";
 
     co(function*() {
         
@@ -49,11 +55,13 @@ exports.eventsCT2xDev = (req, res) => {
         console.log("Query:",JSON.stringify(query));
 
         // initialize database
-        const dbName = "coket2";
-        const db = client.db(dbName);
+        const dbName = "wilcon";
+        
         const dbLogging = client.db(`wd-${dbName}-logging`);
-        const vehiclesCollection = db.collection('vehicles');
         const eventsCollection = dbLogging.collection('events');
+
+        const otherDb = client.db(dbName);
+        const vehiclesCollection = otherDb.collection('vehicles');
 
         // date and time variables (moment)
         const startTime = moment.tz(query["Event start time"]+"Z", undefined, timezone).toISOString();
@@ -126,4 +134,4 @@ exports.eventsCT2xDev = (req, res) => {
         // return error
         res.status(500).send('Error in CO: ' + JSON.stringify(error));
     });
-};
+});

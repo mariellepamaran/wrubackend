@@ -24,9 +24,6 @@ exports.overspeedingEventsFleetxDev = (req, res) => {
     res.set('Access-Control-Allow-Headers', '*');
     res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
 
-    // declare event urls
-    // const eventShipmentURL = "https://asia-east2-secure-unison-275408.cloudfunctions.net/eventsCT1_Shipments";
-    // const eventCICOURL = "https://asia-east2-secure-unison-275408.cloudfunctions.net/eventsCT1_CICO";
 
     co(function*() {
         

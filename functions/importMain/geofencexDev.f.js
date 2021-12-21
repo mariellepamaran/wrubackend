@@ -22,14 +22,14 @@ const request = require('request');
 // to continue the request for the next X number of data. 
 // Page Index will reset to 0 if the function already reached the last data from WRU Main
 const pageIndexClient = {
-    "wd-coket1": 0,
-    "wd-coket2": 0,
-    "wd-fleet|fromT1" : 0,
-    "wd-fleet|fromT2" : 0,
-    "wd-wilcon": 0,
+    "coket1": 0,
+    "coket2": 0,
+    "fleet|fromT1" : 0,
+    "fleet|fromT2" : 0,
+    "wilcon": 0,
 };
 const geofenceGroupIdClient = {
-    "wd-wilcon": 8647
+    "wilcon": 8647
 };
 
 // PRODUCTION
@@ -52,20 +52,20 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
 
         // list of clients. Key is usually the db name
         const CLIENTS = {
-            "wd-coket1": null,
-            "wd-coket2": null,
-            "wd-fleet|fromT1" : null,
-            "wd-fleet|fromT2" : null,
-            "wd-wilcon": null,
+            "coket1": null,
+            "coket2": null,
+            "fleet|fromT1" : null,
+            "fleet|fromT2" : null,
+            "wilcon": null,
         };
         const CLIENT_OPTIONS = {
-            "wd-coket1": {  identifier: 'T1',      ggsURL: "coca-cola.server93.com",    appId: 9,      username: "wru_marielle",    password: "467388",       geofenceGroupIds: null                     },
-            "wd-coket2": {  identifier: 'T2',      ggsURL: "coca-cola.server93.com",    appId: 4,      username: "wru_marielle",    password: "467388",       geofenceGroupIds: null                     },
-            "wd-wilcon": {  identifier: 'Wilcon',  ggsURL: "wru.server93.com",          appId: 427,    username: "wru_marielle",    password: "ilovecats",    geofenceGroupIds: [8647,8640,9326,9332]    },
+            "coket1": {  identifier: 'T1',      ggsURL: "coca-cola.server93.com",    appId: 9,      username: "wru_marielle",    password: "467388",       geofenceGroupIds: null                     },
+            "coket2": {  identifier: 'T2',      ggsURL: "coca-cola.server93.com",    appId: 4,      username: "wru_marielle",    password: "467388",       geofenceGroupIds: null                     },
+            "wilcon": {  identifier: 'Wilcon',  ggsURL: "wru.server93.com",          appId: 427,    username: "wru_marielle",    password: "ilovecats",    geofenceGroupIds: [8647,8640,9326,9332]    },
                                                                                                                                         // 8647 - Store, 8640- Warehouse, 9326- PIER, 9332 - Processing
                                                                                                 
-            "wd-fleet|fromT1":  {  importFrom: "wd-coket1",    geofenceIdentifier: 'short_name'        },
-            "wd-fleet|fromT2":  {  importFrom: "wd-coket2",    geofenceIdentifier: 'short_name'        },
+            "fleet|fromT1":  {  importFrom: "coket1",    geofenceIdentifier: 'short_name'        },
+            "fleet|fromT2":  {  importFrom: "coket2",    geofenceIdentifier: 'short_name'        },
         };
 
         var hasError = false; // check if there were error/s during process(). 
@@ -79,8 +79,8 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
         function implement (clientName){
             // initialize database
             const dbName = clientName.split("|")[0];
-            const db = client.db(dbName);
-            const geofencesCollection = db.collection('geofences');
+            const otherDb = client.db(dbName);
+            const geofencesCollection = otherDb.collection('geofences');
 
             // import options
             const importFrom = CLIENT_OPTIONS[clientName].importFrom;

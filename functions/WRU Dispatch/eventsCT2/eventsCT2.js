@@ -59,9 +59,9 @@ exports.eventsCT2 = (req, res) => {
         console.log("Query:",JSON.stringify(query));
 
         // initialize database
-        const dbName = "wd-coket2";
+        const dbName = "coket2";
         const db = client.db(dbName);
-        const dbLogging = client.db(`${dbName}-logging`);
+        const dbLogging = client.db(`wd-${dbName}-logging`);
         const vehiclesCollection = db.collection('vehicles');
         const eventsCollection = dbLogging.collection('events');
 

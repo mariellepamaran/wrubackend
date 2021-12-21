@@ -1,5 +1,5 @@
 /**
- * eventsCT1
+ * eventsCokeT1
  * 
  * >> This function's main goal is to save the event data to the database <<
  * 
@@ -7,37 +7,23 @@
  * 
  */
 
+const functions = require('firebase-functions');
 const co = require('co');
 const mongodb = require('mongodb');
 const ObjectId = require('mongodb').ObjectID;
 const moment = require('moment-timezone');
 const request = require('request');
+ 
+// PRODUCTION
+// const uri = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
+// DEVELOPMENT
+const uri = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
 
-// database url (production)
-const uri = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
-
-exports.events = (req, res) => {
-    // set the response HTTP header
-    res.set('Content-Type','application/json');
-    res.set('Access-Control-Allow-Origin', '*');
-    res.set('Access-Control-Allow-Headers', '*');
-    res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-
-    // call the development version of this function
-    try {
-        // convert object to url parameter string
-        const queryString = Object.keys(req.query).map(key => key + '=' + req.query[key]).join('&');
-        request({
-            method: 'GET',
-            url: `https://asia-east2-secure-unison-275408.cloudfunctions.net/eventsCT1xDev?${queryString}`,
-        });
-    } catch (error){
-        console.log("Request Error",error);
-    }
+exports = module.exports = functions.region('asia-east2').runWith({ timeoutSeconds: 60, memory: '128MB' }).https.onRequest((req, res) => {
 
     // declare event urls
-    const eventShipmentURL = "https://asia-east2-secure-unison-275408.cloudfunctions.net/eventsCT1_Shipments";
-    const eventCICOURL = "https://asia-east2-secure-unison-275408.cloudfunctions.net/eventsCT1_CICO";
+    const eventShipmentURL = "https://asia-east2-secure-unison-275408.cloudfunctions.net/eventsCokeT1XDevShipments";
+    const eventCICOURL = "https://asia-east2-secure-unison-275408.cloudfunctions.net/eventsCokeT1XDevCico";
 
     co(function*() {
         
@@ -125,21 +111,21 @@ exports.events = (req, res) => {
                     console.log("Request Error",error);
                 }
 
-                // // Call CICO function
-                // try {
-                //     // add 'insertedId' to query to send to CICO function
-                //     req.query.insertedId = insertedId;
-                //     // add 'newObjectId' to query to send to CICO function
-                //     req.query.newObjectId = newObjectId;
-                //     // convert object to url parameter string
-                //     const queryString = Object.keys(req.query).map(key => key + '=' + req.query[key]).join('&');
-                //     request({
-                //         method: 'GET',
-                //         url: `${eventCICOURL}?${queryString}`,
-                //     });
-                // } catch (error){
-                //     console.log("Request Error",error);
-                // }
+                // Call CICO function
+                try {
+                    // add 'insertedId' to query to send to CICO function
+                    req.query.insertedId = insertedId;
+                    // add 'newObjectId' to query to send to CICO function
+                    req.query.newObjectId = newObjectId;
+                    // convert object to url parameter string
+                    const queryString = Object.keys(req.query).map(key => key + '=' + req.query[key]).join('&');
+                    request({
+                        method: 'GET',
+                        url: `${eventCICOURL}?${queryString}`,
+                    });
+                } catch (error){
+                    console.log("Request Error",error);
+                }
 
                 // close the mongodb client connection
                 client.close();
@@ -174,4 +160,4 @@ exports.events = (req, res) => {
         // return error
         res.status(500).send('Error in CO: ' + JSON.stringify(error));
     });
-};
+});

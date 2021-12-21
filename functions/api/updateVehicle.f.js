@@ -16,10 +16,10 @@ const prodURI = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.ne
 const devURI = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-dev-shard-00-00.tyysb.mongodb.net:27017,wru-dev-shard-00-01.tyysb.mongodb.net:27017,wru-dev-shard-00-02.tyysb.mongodb.net:27017/wru-dev?ssl=true&replicaSet=atlas-5ae98n-shard-0&authSource=admin&retryWrites=true&w=majority"
 
 const clientApplicationId = {
-    "9":    "wd-coket1",
-    "4":    "wd-coket2",
-    "14":   "wd-fleet",
-    "427":  "wd-wilcon",
+    "9":    "coket1",
+    "4":    "coket2",
+    "14":   "fleet",
+    "427":  "wilcon",
     "208":  "pldt",
 };
 
@@ -33,10 +33,10 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
         const devClient = yield mongodb.MongoClient.connect(devURI,{ useUnifiedTopology: true }, { useNewUrlParser: true }, { connectTimeoutMS: 30000 }, { keepAlive: 1});
         
         const CLIENT_OPTIONS = {
-            "wd-coket1": {   ggsURL: "coca-cola.server93.com",    appId: 9,      username: "wru_marielle",    password: "467388",           validBody: ['name']   },
-            "wd-coket2": {   ggsURL: "coca-cola.server93.com",    appId: 4,      username: "wru_marielle",    password: "467388",           validBody: ['name']   }, 
-            "wd-fleet":  {   ggsURL: "coca-cola.server93.com",    appId: 14,     username: "wru_marielle",    password: "467388",           validBody: ['name']   },
-            "wd-wilcon": {   ggsURL: "wru.server93.com",          appId: 427,    username: "wru_marielle",    password: "ilovecats",        validBody: ['name']   },
+            "coket1": {   ggsURL: "coca-cola.server93.com",    appId: 9,      username: "wru_marielle",    password: "467388",           validBody: ['name']   },
+            "coket2": {   ggsURL: "coca-cola.server93.com",    appId: 4,      username: "wru_marielle",    password: "467388",           validBody: ['name']   }, 
+            "fleet":  {   ggsURL: "coca-cola.server93.com",    appId: 14,     username: "wru_marielle",    password: "467388",           validBody: ['name']   },
+            "wilcon":    {   ggsURL: "wru.server93.com",          appId: 427,    username: "wru_marielle",    password: "ilovecats",        validBody: ['name']   },
             "pldt":      {   ggsURL: "pldt.server93.com",         appId: 208,    username: "wru_dev",         password: "iwanttomukbang",   validBody: ['name']   },
         };
 

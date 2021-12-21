@@ -74,11 +74,13 @@ exports.eventsCT1xDev_CICO = (req, res) => {
         console.log("Filtered:",`${query.GEOFENCE_NAME} - ${query.USER_NAME} (${query.USER_USERNAME})`);
         
         // initialize database
-        const dbName = "wd-coket1";
-        const db = client.db(dbName);
-        const dbLogging = client.db(`${dbName}-logging`);
-        const geofencesCollection = db.collection('geofences');
+        const dbName = "coket1";
+
+        const dbLogging = client.db(`wd-${dbName}-logging`);
         const eventsCollection = dbLogging.collection('events');
+        
+        const otherDb = client.db(dbName);
+        const geofencesCollection = otherDb.collection('geofences');
             
 
         // function that rounds off a number

@@ -15,10 +15,10 @@ const mongodb = require('mongodb');
 const uri = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
 
 const clientApplicationId = {
-    "9":    "wd-coket1",
-    "4":    "wd-coket2",
-    "14":   "wd-fleet",
-    "427":  "wd-wilcon",
+    "9":    "coket1",
+    "4":    "coket2",
+    "14":   "fleet",
+    "427":  "wilcon",
 };
 
 exports = module.exports = functions.region('asia-east2').runWith({ timeoutSeconds: 60, memory: '128MB' }).https.onRequest((req, res) => {

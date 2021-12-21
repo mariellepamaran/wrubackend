@@ -43,12 +43,12 @@ exports.scheduledShipmentxDev = (req, res) => {
         
         // list of clients. Key is usually the db name
         const CLIENTS = {
-            "wd-wilcon":null,
+            "wilcon":null,
         };
         const CLIENT_OPTIONS = {
             // 0 means exactly on schedule. 
             // Greater than 0 means X minutes before schedule
-            "wd-wilcon": { activateInMinutes: 60, defaultStatus: "assigned" } 
+            "wilcon": { activateInMinutes: 60, defaultStatus: "assigned" } 
         };
 
         // array of promises
@@ -64,10 +64,12 @@ exports.scheduledShipmentxDev = (req, res) => {
         /************** Functions **************/
         function process(clientName){
             // initialize database
-            const db = client.db(clientName);
+            const db = client.db('wd-'+clientName);
             const dispatchCollection = db.collection('dispatch');
-            const geofencesCollection = db.collection('geofences');
-            const vehiclesHistoryCollection = db.collection('vehicles_history');
+
+            const otherDb = client.db(clientName);
+            const geofencesCollection = otherDb.collection('geofences');
+            const vehiclesHistoryCollection = otherDb.collection('vehicles_history');
 
             // get Client's default shipment status
             const defaultStatus = CLIENT_OPTIONS[clientName].defaultStatus;

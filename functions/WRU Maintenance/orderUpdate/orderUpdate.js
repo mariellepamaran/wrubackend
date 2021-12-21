@@ -50,6 +50,7 @@ exports.parts = (req, res) => {
 
         // list of clients. Key is usually the db name
         const CLIENT_OPTIONS = {
+            // 36-digit
             "zV8M2z81pPxhPJelifnz9tjmhwS9eSFIMelE": { clientName: "wm-wilcon" }
         };
 
@@ -60,54 +61,149 @@ exports.parts = (req, res) => {
         /************** end Variable Initialization **************/
 
 
+        /************** Universal Functions **************/
+
+        // a function that checks if an array(arr) contains all values from another array(target)
+        const checker = (arr, target) => target.every(v => arr.includes(v));
+
+        /************** end Universal Functions **************/
+
+        
         /************** Process **************/
         // check if token passed is valid
         if(CLIENT_OPTIONS[query.token]){
+
+            const requiredParams = ["service_type","service_id","line_id"];
             
-            // item_number is required (will serve as item's ID)
-            if(query.item_number){
+            // if client sent all required parameters
+            if(checker(Object.keys(query),requiredParams)){
 
                 // initialize database
                 const clientName = CLIENT_OPTIONS[query.token].clientName;
                 const db = client.db(clientName);
-                const partsCollection = db.collection('parts');
+                const serviceCollection = (query.service_type == "pms") ? "pms_requests" : query.service_type;
+                const unknownCollection = db.collection(serviceCollection);
 
                 
                 /*
-                    Company Code
-                    Item Number
-                    Qty
-                    SRP
-                    Brand Code
-                    Supplier Code
-                    Last Received Date
-                    Last Withdraw Date
+                    Parameters expected/required:
+                       > Service Type (SR/PMS)
+                       > Service ID
+
+                       > Line ID
+
+                       > Plan Order
+                       > Status
+                       > PO Number
+                       > Order Number
+                       > Withdrawal Number
+                       > Supplier Code
                 */
 
-                // object to be saved to the db
-                const obj = {
-                    company_code: query.company_code,
-                    // item_number: query.item_number,
-                    qty: query.qty,
-                    srp: query.srp,
-                    brand_code: query.brand_code,
-                    supplier_code: query.supplier_code,
-                    last_received_date: query.last_received_date,
-                    last_withdraw_date: query.last_withdraw_date
-                };
-                
-                // update data and insert if does not exist yet
-                partsCollection.updateOne(
-                    { _id: query.item_number },
-                    { $set: obj },
-                    { upsert: true }
-                ).then(docs => {
-                    // print for debugging
-                    console.log("Import Okay");
+                unknownCollection.find({ _id: query.service_id }).toArray().then(docs => {
+                    const doc = docs[0];
 
-                    isDone();
+                    if(doc){
+
+                        // object to be updated to the db
+                        const set = {};
+
+                        // **SR**
+                        if(query.service_type == "sr"){
+                            
+                            /*
+                                DB Structure for SR
+                                    > _id
+                                    > category
+                                        > UNKNOWN_CATEGORY
+                                            > parts
+                                                > <ARRAY>
+                                                    > line_id
+                            */
+
+                            // loop each category
+                            Object.keys(doc.category||{}).forEach(key => {
+    
+                                // loop through parts array of each category
+                                Object.keys(doc.category[key].parts||{}).forEach(line_id => {
+    
+                                    // check if part's line id is equal to param's line id
+                                    if(line_id == query.line_id){
+    
+                                        // check if no data has been added yet (just extra checking). Line ID is usually unique
+                                        if(Object.keys(set).length == 0){
+                                            
+                                            // only add data to "set" is query params exists
+                                            (![null,undefined].includes(query.plan_order)) ? set[`category.${key}.parts.${line_id}.plan_order`] = query.plan_order : null;
+                                            (![null,undefined].includes(query.status)) ? set[`category.${key}.parts.${line_id}.status`] = query.status : null;
+                                            (![null,undefined].includes(query.po_number)) ? set[`category.${key}.parts.${line_id}.po_number`] = query.po_number : null;
+                                            (![null,undefined].includes(query.order_number)) ? set[`category.${key}.parts.${line_id}.order_number`] = query.order_number : null;
+                                            (![null,undefined].includes(query.withdrawal_number)) ? set[`category.${key}.parts.${line_id}.withdrawal_number`] = query.withdrawal_number : null;
+                                            (![null,undefined].includes(query.supplier_code)) ? set[`category.${key}.parts.${line_id}.supplier_code`] = query.supplier_code : null;
+                                        }
+                                    }
+                                });
+                            });
+                        } else {
+                            // **PMS**
+                            
+                            /*
+                                DB Structure for PMS
+                                    > _id
+                                    > parts
+                                        > <ARRAY>
+                                            > line_id
+                            */
+
+                            // loop through parts array of each category
+                            Object.keys(doc.parts||{}).forEach(line_id => {
+
+                                // check if part's line id is equal to param's line id
+                                if(line_id == query.line_id){
+
+                                    // check if no data has been added yet (just extra checking). Line ID is usually unique
+                                    if(Object.keys(set).length == 0){
+                                        
+                                        // only add data to "set" is query params exists
+                                        (![null,undefined].includes(query.plan_order)) ? set[`parts.${line_id}.plan_order`] = query.plan_order : null;
+                                        (![null,undefined].includes(query.status)) ? set[`parts.${line_id}.status`] = query.status : null;
+                                        (![null,undefined].includes(query.po_number)) ? set[`parts.${line_id}.po_number`] = query.po_number : null;
+                                        (![null,undefined].includes(query.order_number)) ? set[`parts.${line_id}.order_number`] = query.order_number : null;
+                                        (![null,undefined].includes(query.withdrawal_number)) ? set[`parts.${line_id}.withdrawal_number`] = query.withdrawal_number : null;
+                                        (![null,undefined].includes(query.supplier_code)) ? set[`parts.${line_id}.supplier_code`] = query.supplier_code : null;
+                                    }
+                                }
+                            });
+                        }
+                        
+
+                        // update db if only there's at least one (1) thing to update
+                        if(Object.keys(set).length > 0){
+                            unknownCollection.updateOne(
+                                { _id: query.service_id },
+                                {
+                                    $set: set
+                                }
+                            ).then(docs => {
+                                // print for debugging
+                                console.log("Update okay. Set:",set);
+            
+                                isDone();
+                            }).catch(error => {
+                                isDone("Unknown (update)",error);
+                            });
+                        } else {
+                            // print for debugging
+                            console.log("Update empty.");
+
+                            isDone();
+                        }
+                    } else {
+                        // return 400 (Bad Request) error
+                        res.status(400).send("Bad Request. Invalid 'service_type' or 'service_id'.");
+                    }
                 }).catch(error => {
-                    isDone("Parts (update)",error);
+                    isDone("Unknown (find)",error);
                 });
             } else {
                 // return 400 (Bad Request) error
