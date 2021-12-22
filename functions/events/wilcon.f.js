@@ -53,6 +53,7 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
         console.log("Method:",method);
         console.log("Body:",JSON.stringify(body));
         console.log("Query:",JSON.stringify(query));
+        console.log("Filtered:",`${query.GEOFENCE_NAME} - ${query.USER_NAME} (${query.USER_USERNAME})`);
 
         // initialize database
         const dbName = "wilcon";
