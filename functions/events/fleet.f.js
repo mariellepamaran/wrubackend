@@ -1,31 +1,26 @@
 /**
- * overspeedingEventsFleet
+ * eventsFleet
  * 
  * >> This function's main goal is to save the overspeeding event data to the database <<
  * 
  */
 
+const functions = require('firebase-functions');
 const co = require('co');
 const mongodb = require('mongodb');
-const ObjectId = require('mongodb').ObjectID;
 const moment = require('moment-timezone');
 const request = require('request');
-
+ 
 // database url (production)
 const uri = "mongodb://wru:7t0R3DyO9JGtlQRe@wru-shard-00-00.tyysb.mongodb.net:27017,wru-shard-00-01.tyysb.mongodb.net:27017,wru-shard-00-02.tyysb.mongodb.net:27017/wru?ssl=true&replicaSet=atlas-d1iq8u-shard-0&authSource=admin&retryWrites=true&w=majority";
 
-exports.overspeedingEventsFleet = (req, res) => {
-    // set the response HTTP header
-    res.set('Content-Type','application/json');
-    res.set('Access-Control-Allow-Origin', '*');
-    res.set('Access-Control-Allow-Headers', '*');
-    res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+exports = module.exports = functions.region('asia-east2').runWith({ timeoutSeconds: 60, memory: '128MB' }).https.onRequest((req, res) => {
 
     // call the development version of this function
     try {
         request({
             method: 'POST',
-            url: `https://asia-east2-secure-unison-275408.cloudfunctions.net/overspeedingEventsFleetxDev`,
+            url: `https://asia-east2-secure-unison-275408.cloudfunctions.net/eventsFleetxDev`,
             headers : {
                 "content-type": "application/json",
             },
@@ -58,8 +53,9 @@ exports.overspeedingEventsFleet = (req, res) => {
         console.log("Query:",JSON.stringify(query));
         
         // initialize database
-        const dbName = "wd-fleet";
-        const dbLogging = client.db(`${dbName}-logging`);
+        const dbName = "fleet";
+
+        const dbLogging = client.db(`wd-${dbName}-logging`);
         const eventsCollection = dbLogging.collection('events');
         
         // make sure that id exists
@@ -124,4 +120,4 @@ exports.overspeedingEventsFleet = (req, res) => {
         // return error
         res.status(500).send('Error in CO: ' + JSON.stringify(error));
     });
-};
+});
