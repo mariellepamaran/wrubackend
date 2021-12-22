@@ -103,23 +103,13 @@ exports.scheduledPMSxDev = (req, res) => {
                     { 
                         $match: { status: { $in: ["approved","ongoing"] } }
                     },
-                    { 
-                        $lookup: {
-                            from: 'pms',
-                            localField: 'vehicle_id',
-                            foreignField: '_id',
-                            as: 'pms',
-                        }
-                    },
-                    { $unwind: "$pms" }, // do not preserveNull. vehicle is required
                     {
                         $project: {
                             "_id": 1,
                             "next_sc_date": 1,
                             "vehicle_id": 1,
                             "emails": 1,
-
-                            "pms.months": 1,
+                            "months": 1,
                         }
                     }
                 ]).toArray().then(docs => { 
@@ -149,7 +139,7 @@ exports.scheduledPMSxDev = (req, res) => {
     
                                     // notify the emails listed in this pms
                                     (val.emails||[]).forEach(to => {
-                                        const months = val.pms.months;
+                                        const months = val.months;
                                         childPromise.push(transporter.sendMail({
                                             from: '"WRU Maintenance" <noreply@wru.ph>', // sender address
                                             to: to || `wru.developer@gmail.com`, // list of receivers
