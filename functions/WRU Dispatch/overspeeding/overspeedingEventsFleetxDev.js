@@ -49,7 +49,7 @@ exports.overspeedingEventsFleetxDev = (req, res) => {
         // initialize database
         const dbName = "wd-fleet";
         const dbLogging = client.db(`${dbName}-logging`);
-        const overspeedingEventsCollection = dbLogging.collection('overspeeding_events');
+        const eventsCollection = dbLogging.collection('events');
         
         // make sure that id exists
         if(body.id){
@@ -72,7 +72,7 @@ exports.overspeedingEventsFleetxDev = (req, res) => {
             // // exectute Promise.all() method
             Promise.all([
                 // insert event to database
-                overspeedingEventsCollection.insertOne(body),
+                eventsCollection.insertOne(body),
             ]).then(result => {
                 // get first(0) element of the result because we need to get the insertedId from "eventsCollection.insertOne(event)"
                 const insertedId = result[0].insertedId;
