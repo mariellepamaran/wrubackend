@@ -134,7 +134,7 @@ exports.scheduledPMS = (req, res) => {
                             const vehicle = vDocs.find(x => x._id == val.vehicle_id);
 
                             // make sure that the vehicle exists in the database and there's a PMS linked to the request
-                            if(vehicle && val.pms){
+                            if(vehicle && val.pms && val.next_sc_date){
                                 // Note:
                                 // next_sc_date = next scheduled date
                                 // last_sc_date = last scheduled date
