@@ -72,11 +72,12 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
 
                 
                 /*
+                    Company Name
                     Company Code
                     Item Number
                     Item Name
                     Qty
-                    SRP
+                    Cost Price
                     Brand Name
                     Brand Code
                     Supplier Code
@@ -87,11 +88,12 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
                     
                 // {
                 //     "token":"zV8M2z81pPxhPJelifnz9tjmhwS9eSFIMelE",
+                //     "company_name":"Company X",
                 //     "company_code":"110",
                 //     "item_number":"186300000001",
                 //     "item_name":"XXXXX",
                 //     "qty":"10",
-                //     "srp":"49",
+                //     "cost_price":"49",
                 //     "brand_name":"XXXXX",
                 //     "brand_code":"G1001556",
                 //     "supplier_code":"VICT02",
@@ -102,11 +104,12 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
                 // object to be saved to the db
                 const obj = {};
 
+                (![null,""].includes(query.company_name)) ? obj.company_name = query.company_name : null;
                 (![null,""].includes(query.company_code)) ? obj.company_code = query.company_code : null;
                 (![null,""].includes(query.item_number)) ? obj.item_number = query.item_number : null;
                 (![null,""].includes(query.item_name)) ? obj.item_name = query.item_name : null;
                 (![null,""].includes(query.qty)) ? obj.qty = query.qty : null;
-                (![null,""].includes(query.srp)) ? obj.srp = query.srp : null;
+                (![null,""].includes(query.cost_price)) ? obj.cost_price = query.cost_price : null;
                 (![null,""].includes(query.brand_name)) ? obj.brand_name = query.brand_name : null;
                 (![null,""].includes(query.brand_code)) ? obj.brand_code = query.brand_code : null;
                 (![null,""].includes(query.supplier_code)) ? obj.supplier_code = query.supplier_code : null;
