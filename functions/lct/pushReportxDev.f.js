@@ -27,8 +27,8 @@ const batchOf = 10;
 
 // Tips: Logout of all gmail accounts then sign in to the account you want to use for email.
 // https://www.google.com/settings/security/lesssecureapps
-                                                                                // 5 min
-exports = module.exports = functions.region('asia-east2').runWith({ timeoutSeconds: 300, memory: '256MB' }).https.onRequest((req, res) => { 
+                                                                                // 7 min
+exports = module.exports = functions.region('asia-east2').runWith({ timeoutSeconds: 420, memory: '256MB' }).https.onRequest((req, res) => { 
 
     co(function*() {
 
