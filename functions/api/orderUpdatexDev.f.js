@@ -143,6 +143,41 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
                                     }
                                 });
                             });
+                        } else if(query.service_type == "tires"){
+                            
+                            /*
+                                DB Structure for Tires
+                                    > _id
+                                    > services
+                                        > UNKNOWN_CATEGORY
+                                            > parts
+                                                > <ARRAY>
+                                                    > line_id
+                            */
+
+                            // loop each services
+                            Object.keys(doc.services||{}).forEach(key => {
+    
+                                // loop through parts array of each services
+                                Object.keys(doc.services[key].parts||{}).forEach(line_id => {
+    
+                                    // check if part's line id is equal to param's line id
+                                    if(line_id == query.line_id){
+    
+                                        // check if no data has been added yet (just extra checking). Line ID is usually unique
+                                        if(Object.keys(set).length == 0){
+                                            
+                                            // only add data to "set" is query params exists
+                                            (![null,undefined].includes(query.plan_order)) ? set[`services.${key}.parts.${line_id}.plan_order`] = query.plan_order : null;
+                                            (![null,undefined].includes(query.status)) ? set[`services.${key}.parts.${line_id}.status`] = query.status : null;
+                                            (![null,undefined].includes(query.po_number)) ? set[`services.${key}.parts.${line_id}.po_number`] = query.po_number : null;
+                                            (![null,undefined].includes(query.order_number)) ? set[`services.${key}.parts.${line_id}.order_number`] = query.order_number : null;
+                                            (![null,undefined].includes(query.withdrawal_number)) ? set[`services.${key}.parts.${line_id}.withdrawal_number`] = query.withdrawal_number : null;
+                                            (![null,undefined].includes(query.supplier_code)) ? set[`services.${key}.parts.${line_id}.supplier_code`] = query.supplier_code : null;
+                                        }
+                                    }
+                                });
+                            });
                         } else {
                             // **PMS**
                             
@@ -154,7 +189,7 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
                                             > line_id
                             */
 
-                            // loop through parts array of each category
+                            // loop through parts
                             Object.keys(doc.parts||{}).forEach(line_id => {
 
                                 // check if part's line id is equal to param's line id
