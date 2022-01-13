@@ -107,18 +107,18 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
                 vehiclesHistoryCollection.find({_id: Number(query.ASSIGNED_VEHICLE_ID)}).toArray().then(vDocs => {
                     const vDoc = vDocs[0] || {};
 
+                    // location data
+                    const location = vDoc.location || [];
+                    const newEventData = { 
+                        RULE_NAME: query.RULE_NAME, 
+                        stage: query.stage, 
+                        timestamp: finalTime.toISOString()
+                    };
+
+                    // used to check if a new data was inserted/pushed to vehicle's location history
+                    var isPushed = false;
+
                     try {
-                        // location data
-                        const location = vDoc.location || [];
-                        const newEventData = { 
-                            RULE_NAME: query.RULE_NAME, 
-                            stage: query.stage, 
-                            timestamp: finalTime.toISOString()
-                        };
-
-                        // used to check if a new data was inserted/pushed to vehicle's location history
-                        var isPushed = false;
-
                         // loop through last 2 locations from latest to oldest
                         // Eg. [1,2,3,4,5,6,7] ----> We only need to loop or get data 7 & 6
                         for(var i = location.length-1; i >= location.length-2; i--){
@@ -142,26 +142,27 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
                                 break;
                             }
                         }
-                        
-                        // if no data was pushed
-                        if(!isPushed){
-                            // push new data
-                            location.push({
-                                short_name: GEOFENCE_NAME,
-                                events: [ newEventData ]
-                            });
-                        }
-
-                        // update the location history of vehicle
-                        // upsert is true to make it automatically insert if find query failed
-                        vehiclesHistoryCollection.updateOne({_id: Number(query.ASSIGNED_VEHICLE_ID)},{ $set: {location} },{upsert: true}).then(docs => {
-                            callback();
-                        }).catch(error => {
-                            isDone('Vehicle History (Update)',error);
-                        });
                     } catch(error){
-                        isDone('Vehicle History (Try/Catch)',error);
+                        // Do not isDone. Error setHeaders...
+                        console.log('Vehicle History (Try/Catch)',error);
                     }
+                        
+                    // if no data was pushed
+                    if(!isPushed){
+                        // push new data
+                        location.push({
+                            short_name: GEOFENCE_NAME,
+                            events: [ newEventData ]
+                        });
+                    }
+
+                    // update the location history of vehicle
+                    // upsert is true to make it automatically insert if find query failed
+                    vehiclesHistoryCollection.updateOne({_id: Number(query.ASSIGNED_VEHICLE_ID)},{ $set: {location} },{upsert: true}).then(docs => {
+                        callback();
+                    }).catch(error => {
+                        isDone('Vehicle History (Update)',error);
+                    });
                 }).catch(error => {
                     isDone('Vehicle History (Find)',error);
                 });
