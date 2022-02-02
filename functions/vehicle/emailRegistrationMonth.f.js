@@ -88,6 +88,8 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
                         const date = month + ' ' + day + ', ' + year;
                         const diffDays = moment.tz(date, format.full_date, timezone).startOf('day').diff(now.startOf('day'), 'days');
 
+                        console.log('Diff days for:', val['Plate Number'], diffDays);
+
                         if(diffDays == 30){
                             
                             // save registration
@@ -112,8 +114,6 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
                 // loop email list
                 Object.keys(emailsXvehicles).forEach(eVal => {
 
-                    console.log(eVal);
-
                     const vehicle_list = emailsXvehicles[eVal];
 
                     // send email
@@ -130,6 +130,7 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
 
                 if(childPromise.length > 0){
                     Promise.all(childPromise).then(result => {
+                        console.log('Successful result', result);
                         isDone(clientName);
                     }).catch(error => {
                         isDone(clientName,"Promise All",error);

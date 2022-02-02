@@ -79,6 +79,8 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
                     if(val['expiry_date']){
                         const diffDays = moment.tz(val['expiry_date'], undefined, timezone).startOf('day').diff(now.startOf('day'), 'days');
 
+                        console.log('Diff days for:', val['Plate Number'], diffDays);
+
                         if(diffDays == 30){
                             
                             // save expiry date
@@ -117,6 +119,7 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
 
                 if(childPromise.length > 0){
                     Promise.all(childPromise).then(result => {
+                        console.log('Successful result', result);
                         isDone(clientName);
                     }).catch(error => {
                         isDone(clientName,"Promise All",error);
