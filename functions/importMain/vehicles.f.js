@@ -28,6 +28,7 @@ const pageIndexClient = {
     "fleet":  0,
     "wilcon": 0,
     "pldt": 0,
+    "cemex": 0,
 };
 
 // database url (production)
@@ -58,15 +59,34 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
             "fleet":  null,
             "wilcon": null,
             // "pldt": null,
+            "cemex": null,
         };
+
+        // CEMEX custom save
+        const CUSTOMSAVE = {
+            'cemex': ( _set ) => {
+
+                const newSet = {};
+
+                // for Trucker with value CEMEX, save 2nd word.
+                // Ex. 'CEMEX D2Q027' --> 'D2Q027'
+                if(_set['Trucker'] == 'CEMEX') {
+                    const splitName =  _set['name'].split(' ');
+                    newSet['name'] = splitName[1] || splitName[0];
+                }
+
+                return newSet;
+            }
+        }
         const CLIENT_OPTIONS = {
             // "coket1|fromT2" - we are getting other info from CokeT2 (base T1 on TagId)
             "coket1": {           ggsURL: "coca-cola.server93.com",    appId: 9,      username: "wru_marielle",    password: "467388",           tagId: null,    customfields: ["Trailer","Tractor Conduction","Base Site Code","Base Site","Equipment Number","Availability","Pal Cap","Site","Site Code"]                     },
             "coket1|fromT2": {    ggsURL: "coca-cola.server93.com",    appId: 4,      username: "wru_marielle",    password: "467388",           tagId: 630,     customfields: ["Offline Remark"]    }, // TagId: "ALL T1"
             "coket2": {           ggsURL: "coca-cola.server93.com",    appId: 4,      username: "wru_marielle",    password: "467388",           tagId: 27,      customfields: ["Trailer","Tractor Conduction","Base Site Code","Base Site","Equipment Number","Availability","Pal Cap","Site","Site Code","Offline Remark"]    }, // TagId: "ALL T2"
             "fleet":  {           ggsURL: "coca-cola.server93.com",    appId: 14,     username: "wru_marielle",    password: "467388",           tagId: null,    customfields: ["CN1","CN2","Fuel Capacity","Truck Model"]                                                                                                      },
-            "wilcon":    {        ggsURL: "wru.server93.com",          appId: 427,    username: "wru_marielle",    password: "ilovecats",        tagId: 8634,    customfields: ["Truck Number","Plate Number"]                                                                                                                  }, // TagID: "ALL"
+            "wilcon": {           ggsURL: "wru.server93.com",          appId: 427,    username: "wru_marielle",    password: "ilovecats",        tagId: 8634,    customfields: ["Truck Number","Plate Number"]                                                                                                                  }, // TagID: "ALL"
             "pldt": {             ggsURL: "pldt.server93.com",         appId: 208,    username: "wru_dev",         password: "iwanttomukbang",   tagId: null,    customfields: []                                                                                                                  },
+            "cemex": {            ggsURL: "wru.server93.com",          appId: 449,    username: "wru_dev",         password: "wplof4521amc",     tagId: null,    customfields: ["Trucker", "Driver Name"], customSave: CUSTOMSAVE['cemex']                                                                                                                  },
         };
 
         var hasError = false; // check if there were error/s during process(). 
@@ -198,6 +218,17 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
                                                     set[item.name] = (item.value||"").trim();
                                                 }
                                             });
+
+                                            // Custom Save Function
+                                            if( typeof CLIENT_OPTIONS[clientName].customSave == 'function') {
+                                                const newSaves = CLIENT_OPTIONS[clientName].customSave( set );
+                                                Object.keys( set ).forEach(key => {
+                                                    if( newSaves[key] ){
+                                                        // replace existing value in set or add new value
+                                                        set[key] = newSaves[key];
+                                                    }
+                                                });
+                                            }
 
                                             // retrieve a vehicle from WRU database to check if there are new changes
                                             // this was added because this cloud function is called a lot of times. And if we save everytime it's called,
