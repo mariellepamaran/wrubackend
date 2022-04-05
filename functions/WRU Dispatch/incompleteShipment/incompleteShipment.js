@@ -46,8 +46,8 @@ exports.incompleteShipment = (req, res) => {
 
         // list of clients. Key is usually the db name
         const CLIENTS = {
-            "wd-coket1":null,
-            "wd-coket2":null,
+            // "wd-coket1":null,
+            // "wd-coket2":null,
             "wd-wilcon":null,
         };
 

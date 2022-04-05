@@ -39,17 +39,17 @@ exports.expireSessionTokenxDev = (req, res) => {
         
         // list of clients. Key is usually the db name
         const CLIENTS = {
-            "wd-coket1": null,
-            "wd-coket2": null,
-            "wd-fleet":  null,
+            // "wd-coket1": null,
+            // "wd-coket2": null,
+            // "wd-fleet":  null,
             "wd-wilcon": null,
 
             "wm-wilcon": null,
         };
         const CLIENT_OPTIONS = {
-            "wd-coket1": { type: "asHours", value: 2 },
-            "wd-coket2": { type: "asHours", value: 2 },
-            "wd-fleet":  { type: "asHours", value: 2 },
+            // "wd-coket1": { type: "asHours", value: 2 },
+            // "wd-coket2": { type: "asHours", value: 2 },
+            // "wd-fleet":  { type: "asHours", value: 2 },
             "wd-wilcon": { expiry: true },
 
             "wm-wilcon": { expiry: true },

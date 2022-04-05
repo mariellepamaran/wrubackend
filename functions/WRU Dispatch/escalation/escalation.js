@@ -73,11 +73,11 @@ exports.escalation = (req, res) => {
 
         // list of clients. Key is usually the db name
         const CLIENTS = {
-            "coket1":null,
+            // "coket1":null,
             "wilcon":null,
         };
         const CLIENT_OPTIONS = {
-            "coket1":{ pathName: "CokeT1", ot: "origin-based" },
+            // "coket1":{ pathName: "CokeT1", ot: "origin-based" },
             "wilcon":{ pathName: "Wilcon", overCICO: "startAt-startOfShift" },
         };
 

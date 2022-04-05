@@ -22,10 +22,10 @@ const request = require('request');
 // to continue the request for the next X number of data. 
 // Page Index will reset to 0 if the function already reached the last data from WRU Main
 const pageIndexClient = {
-    "coket1": 0,
-    "coket2": 0,
-    "fleet|fromT1" : 0,
-    "fleet|fromT2" : 0,
+    // "coket1": 0,
+    // "coket2": 0,
+    // "fleet|fromT1" : 0,
+    // "fleet|fromT2" : 0,
     "wilcon": 0,
 };
 const geofenceGroupIdClient = {
@@ -54,20 +54,20 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
 
         // list of clients. Key is usually the db name
         const CLIENTS = {
-            "coket1": null,
-            "coket2": null,
-            "fleet|fromT1" : null,
-            "fleet|fromT2" : null,
+            // "coket1": null,
+            // "coket2": null,
+            // "fleet|fromT1" : null,
+            // "fleet|fromT2" : null,
             "wilcon": null,
         };
         const CLIENT_OPTIONS = {
-            "coket1": {  identifier: 'T1',      ggsURL: "coca-cola.server93.com",    appId: 9,      username: "wru_marielle",    password: "467388",       geofenceGroupIds: null                     },
-            "coket2": {  identifier: 'T2',      ggsURL: "coca-cola.server93.com",    appId: 4,      username: "wru_marielle",    password: "467388",       geofenceGroupIds: null                     },
+            // "coket1": {  identifier: 'T1',      ggsURL: "coca-cola.server93.com",    appId: 9,      username: "wru_marielle",    password: "467388",       geofenceGroupIds: null                     },
+            // "coket2": {  identifier: 'T2',      ggsURL: "coca-cola.server93.com",    appId: 4,      username: "wru_marielle",    password: "467388",       geofenceGroupIds: null                     },
             "wilcon": {  identifier: 'Wilcon',  ggsURL: "wru.server93.com",          appId: 427,    username: "wru_marielle",    password: "ilovecats",    geofenceGroupIds: [8647,8640,9326,9332]    },
                                                                                                                                         // 8647 - Store, 8640- Warehouse, 9326- PIER, 9332 - Processing
                                                                                                 
-            "fleet|fromT1":  {  importFrom: "coket1",    geofenceIdentifier: 'short_name'        },
-            "fleet|fromT2":  {  importFrom: "coket2",    geofenceIdentifier: 'short_name'        },
+            // "fleet|fromT1":  {  importFrom: "coket1",    geofenceIdentifier: 'short_name'        },
+            // "fleet|fromT2":  {  importFrom: "coket2",    geofenceIdentifier: 'short_name'        },
         };
 
         var hasError = false; // check if there were error/s during process(). 
