@@ -29,6 +29,7 @@ const pageIndexClient = {
     "wilcon": 0,
     "pldt": 0,
     "cemex": 0,
+    "srf": 0,
 };
 
 // database url (production)
@@ -60,6 +61,7 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
             "wilcon": null,
             // "pldt": null,
             "cemex": null,
+            "srf": null,
         };
 
         // CEMEX custom save
@@ -87,6 +89,7 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
             "wilcon": {           ggsURL: "wru.server93.com",          appId: 427,    username: "wru_marielle",    password: "ilovecats",        tagId: 8634,    customfields: ["Truck Number","Plate Number"]                                                                                                                  }, // TagID: "ALL"
             "pldt": {             ggsURL: "pldt.server93.com",         appId: 208,    username: "wru_dev",         password: "iwanttomukbang",   tagId: null,    customfields: []                                                                                                                  },
             "cemex": {            ggsURL: "wru.server93.com",          appId: 449,    username: "wru_dev",         password: "wplof4521amc",     tagId: null,    customfields: ["Trucker", "Driver Name"], customSave: CUSTOMSAVE['cemex']                                                                                                                  },
+            "srf": {              ggsURL: "wru.server93.com",          appId: 427,    username: "wru_marielle",    password: "ilovecats",        tagId: 8634,    customfields: ["Truck Number","Plate Number"]                                                                                                                  }, // TagID: "ALL"
         };
 
         var hasError = false; // check if there were error/s during process(). 
