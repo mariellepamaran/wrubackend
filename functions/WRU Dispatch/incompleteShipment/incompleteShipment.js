@@ -49,6 +49,7 @@ exports.incompleteShipment = (req, res) => {
             // "wd-coket1":null,
             // "wd-coket2":null,
             "wd-wilcon":null,
+            "wd-orient_freight":null,
         };
 
         var hasError = false; // check if there were error/s during process(). 

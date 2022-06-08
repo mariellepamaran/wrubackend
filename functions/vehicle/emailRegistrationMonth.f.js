@@ -51,6 +51,7 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
         // list of clients. Key is usually the db name
         const CLIENTS = {
             "wilcon":null,
+            "orient_freight":null,
         };
 
         // array of promises

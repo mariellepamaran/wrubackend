@@ -47,7 +47,8 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
         // list of clients. Key is usually the db name
         const CLIENT_OPTIONS = {
             // 36-digit
-            "zV8M2z81pPxhPJelifnz9tjmhwS9eSFIMelE": { clientName: "wm-wilcon" }
+            "zV8M2z81pPxhPJelifnz9tjmhwS9eSFIMelE": { clientName: "wm-wilcon" },
+            "2adws30XULDc1MPZvGfTZDI8873qICCGv2aB": { clientName: "wm-orient_freight" }
         };
 
         var hasError = false; // check if there were error/s during process(). 

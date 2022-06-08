@@ -53,9 +53,11 @@ exports.scheduledPMSxDev = (req, res) => {
         // list of clients. Key is usually the db name
         const CLIENTS = {
             "wm-wilcon":null,
+            "wm-orient_freight":null,
         };
         const CLIENT_OPTIONS = {
-            "wm-wilcon": { otherDb: "wilcon" }
+            "wm-wilcon": { otherDb: "wilcon" },
+            "wm-orient_freight": { otherDb: "orient_freight" },
         };
 
         // array of promises

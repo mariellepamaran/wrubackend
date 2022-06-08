@@ -44,11 +44,13 @@ exports.scheduledShipmentxDev = (req, res) => {
         // list of clients. Key is usually the db name
         const CLIENTS = {
             "wilcon":null,
+            "orient_freight":null,
         };
         const CLIENT_OPTIONS = {
             // 0 means exactly on schedule. 
             // Greater than 0 means X minutes before schedule
-            "wilcon": { activateInMinutes: 60, defaultStatus: "assigned" } 
+            "wilcon": { activateInMinutes: 60, defaultStatus: "assigned" },
+            "orient_freight": { activateInMinutes: 60, defaultStatus: "assigned" } 
         };
 
         // array of promises

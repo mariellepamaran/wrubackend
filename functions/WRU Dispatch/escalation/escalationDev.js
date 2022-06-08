@@ -69,10 +69,12 @@ exports.escalationDev = (req, res) => {
         const CLIENTS = {
             // "coket1":null,
             "wilcon":null,
+            "orient_freight":null,
         };
         const CLIENT_OPTIONS = {
             // "coket1":{ pathName: "CokeT1", ot: "origin-based" },
             "wilcon":{ pathName: "Wilcon", overCICO: "startAt-startOfShift" },
+            "orient_freight":{ pathName: "OrientFreight", overCICO: "startAt-startOfShift" },
         };
 
         // delay options. Minimum and maximum time for each delay/escalation level
@@ -113,7 +115,7 @@ exports.escalationDev = (req, res) => {
             const usersCollection = db.collection('users');
             const regionsCollection = db.collection('regions');
             const clustersCollection = db.collection('clusters');
-
+            
             const otherDb = client.db(clientName);
             const geofencesCollection = otherDb.collection('geofences');
             const vehiclesCollection = otherDb.collection('vehicles');

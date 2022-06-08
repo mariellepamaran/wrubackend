@@ -28,10 +28,12 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
 
         // list of clients. Key is usually the db name
         const CLIENTS = {
-            "wm-wilcon": null
+            "wm-wilcon": null,
+            "wm-orient_freight": null
         };
         const CLIENT_OPTIONS = {
-            "wm-wilcon": { otherDb: "wilcon" }
+            "wm-wilcon": { otherDb: "wilcon" },
+            "wm-orient_freight": { otherDb: "orient_freight" },
         };
 
 

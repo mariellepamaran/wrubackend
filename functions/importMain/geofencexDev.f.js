@@ -27,6 +27,7 @@ const pageIndexClient = {
     // "fleet|fromT1" : 0,
     // "fleet|fromT2" : 0,
     "wilcon": 0,
+    "orient_freight": 0,
 };
 const geofenceGroupIdClient = {
     "wilcon": 8647
@@ -57,12 +58,15 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
             // "fleet|fromT1" : null,
             // "fleet|fromT2" : null,
             "wilcon": null,
+            "orient_freight": null,
         };
         const CLIENT_OPTIONS = {
-            // "coket1": {  identifier: 'T1',      ggsURL: "coca-cola.server93.com",    appId: 9,      username: "wru_marielle",    password: "467388",       geofenceGroupIds: null                     },
-            // "coket2": {  identifier: 'T2',      ggsURL: "coca-cola.server93.com",    appId: 4,      username: "wru_marielle",    password: "467388",       geofenceGroupIds: null                     },
-            "wilcon": {  identifier: 'Wilcon',  ggsURL: "wru.server93.com",          appId: 427,    username: "wru_marielle",    password: "ilovecats",    geofenceGroupIds: [8647,8640,9326,9332]    },
-                                                                                                                                        // 8647 - Store, 8640- Warehouse, 9326- PIER, 9332 - Processing
+            // "coket1": {  identifier: 'T1',      ggsURL: "coca-cola.server93.com",    appId: 9,      username: "wru_marielle",    password: "467388",       geofenceGroupIds: null,      ignoreWithString: ' - '                     },
+            // "coket2": {  identifier: 'T2',      ggsURL: "coca-cola.server93.com",    appId: 4,      username: "wru_marielle",    password: "467388",       geofenceGroupIds: null,      ignoreWithString: ' - '                     },
+            "wilcon":         {  identifier: 'Wilcon',         ggsURL: "wru.server93.com",          appId: 427,    username: "wru_marielle",    password: "ilovecats",    geofenceGroupIds: [8647,8640,9326,9332],      ignoreWithString: '-'    },
+                                                                                                                                                                        // 8647 - Store, 8640- Warehouse, 9326- PIER, 9332 - Processing
+            "orient_freight": {  identifier: 'OrientFreight',  ggsURL: "wru.server93.com",          appId: 468,    username: "wru_marielle",    password: "ilovecats",    geofenceGroupIds: null,      ignoreWithString: null    },
+                                                                                                                                        
                                                                                                 
             // "fleet|fromT1":  {  importFrom: "coket1",    geofenceIdentifier: 'short_name'        },
             // "fleet|fromT2":  {  importFrom: "coket2",    geofenceIdentifier: 'short_name'        },
@@ -85,6 +89,7 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
             // import options
             const importFrom = CLIENT_OPTIONS[clientName].importFrom;
             const geofenceIdentifier = CLIENT_OPTIONS[clientName].geofenceIdentifier || 'id';
+            const ignoreWithString = CLIENT_OPTIONS[clientName].ignoreWithString;
 
             // get Main credentials
             const ggsURL = CLIENT_OPTIONS[ importFrom || clientName ].ggsURL;
@@ -204,7 +209,8 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
                                         //     > CNL PL               >>>>>>>>>> only save this
                                         //     > CNL PL - Processing
                                         //     > CNL PL - Queueing
-                                        if(val.name.indexOf("-") < 0){
+                                        
+                                        if(!ignoreWithString || val.name.indexOf(ignoreWithString) < 0){
 
                                             // retrieve a geofence from WRU database to check if there are new changes
                                             // this was added because this cloud function is called a lot of times. And if we save everytime it's called,

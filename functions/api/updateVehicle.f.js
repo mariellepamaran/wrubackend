@@ -20,6 +20,7 @@ const clientApplicationId = {
     // "4":    "coket2",
     // "14":   "fleet",
     "427":  "wilcon",
+    "468":  "orient_freight",
     "208":  "pldt",
 };
 
@@ -37,6 +38,7 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
             // "coket2": {   ggsURL: "coca-cola.server93.com",    appId: 4,      username: "wru_marielle",    password: "467388",           validBody: ['name']   }, 
             // "fleet":  {   ggsURL: "coca-cola.server93.com",    appId: 14,     username: "wru_marielle",    password: "467388",           validBody: ['name']   },
             "wilcon":    {   ggsURL: "wru.server93.com",          appId: 427,    username: "wru_marielle",    password: "ilovecats",        validBody: ['name']   },
+            "orient_freight":    {   ggsURL: "wru.server93.com",  appId: 468,    username: "wru_marielle",    password: "ilovecats",        validBody: ['name']   },
             "pldt":      {   ggsURL: "pldt.server93.com",         appId: 208,    username: "wru_dev",         password: "iwanttomukbang",   validBody: ['name']   },
         };
 

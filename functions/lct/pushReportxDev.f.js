@@ -277,32 +277,32 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
                                         resendCSV(csv,attachmentIndex,MIN,MAX);
                                     } else {
                                         // if successful request length is same as data's length, mark email as read -- note this will end the function even if only 1 attachment is finished
-                                        if(success[attachmentIndex].length == csv.data.length){
+                                        if((success[attachmentIndex]||[]).length == (csv.data||[]).length){
                                             markEmailRead();
                                         } else {
                                             // send another batch of request
-                                            if((MAX+batchOf) < csv.data.length){
+                                            if((MAX+batchOf) < (csv.data||[]).length){
                                                 // send next 10 batch
                                                 batchSend(MAX,MAX+batchOf);
                                             } else {
                                                 // send last batch
-                                                batchSend(MAX,csv.data.length);
+                                                batchSend(MAX,(csv.data||[]).length);
                                             }
                                         }
                                     }
                                 });
                             } else {
                                 // if successful request length is same as data's length, mark email as read -- note this will end the function even if only 1 attachment is finished
-                                if(success[attachmentIndex].length == csv.data.length){
+                                if((success[attachmentIndex]||[]).length == (csv.data||[]).length){
                                     markEmailRead();
                                 } else {
                                     // send another batch of request
-                                    if((MAX+batchOf) < csv.data.length){
+                                    if((MAX+batchOf) < (csv.data||[]).length){
                                         // send next 10 batch
                                         batchSend(MAX,MAX+batchOf);
                                     } else {
                                         // send last batch
-                                        batchSend(MAX,csv.data.length);
+                                        batchSend(MAX,(csv.data||[]).length);
                                     }
                                 }
                             }
@@ -312,7 +312,7 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
                     }
 
                     function resendCSV(csv,index,MIN,MAX) {
-                        console.log(`Resending ${failed[index].length} object(s)  |  Success ${success[index].length}/${csv.data.length}`);
+                        console.log(`Resending ${(failed[index]||[]).length} object(s)  |  Success ${(success[index]||[]).length}/${(csv.data||[]).length}`);
                         loopAndSend(csv,index,MIN,MAX);
                     }
 
@@ -333,10 +333,10 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
 
                                         // only return the length of success and failed
                                         const successLength = {};
-                                        Object.keys(success).forEach(key => { successLength[key] = success[key].length; });
+                                        Object.keys(success).forEach(key => { successLength[key] = (success[key]||[]).length; });
 
                                         const failedLength = {};
-                                        Object.keys(failed).forEach(key => { failedLength[key] = failed[key].length; });
+                                        Object.keys(failed).forEach(key => { failedLength[key] = (failed[key]||[]).length; });
 
                                         res.json({
                                             ok: 1,

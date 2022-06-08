@@ -29,6 +29,7 @@ const pageIndexClient = {
     "wilcon": 0,
     "pldt": 0,
     "cemex": 0,
+    "orient_freight": 0,
 };
 
 // database url (production)
@@ -60,6 +61,7 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
             "wilcon": null,
             // "pldt": null,
             "cemex": null,
+            "orient_freight": null,
         };
 
         // CEMEX custom save
@@ -84,9 +86,10 @@ exports = module.exports = functions.region('asia-east2').runWith({ timeoutSecon
             // "coket1|fromT2": {    ggsURL: "coca-cola.server93.com",    appId: 4,      username: "wru_marielle",    password: "467388",           tagId: 630,     customfields: ["Offline Remark"]    }, // TagId: "ALL T1"
             // "coket2": {           ggsURL: "coca-cola.server93.com",    appId: 4,      username: "wru_marielle",    password: "467388",           tagId: 27,      customfields: ["Trailer","Tractor Conduction","Base Site Code","Base Site","Equipment Number","Availability","Pal Cap","Site","Site Code","Offline Remark"]    }, // TagId: "ALL T2"
             // "fleet":  {           ggsURL: "coca-cola.server93.com",    appId: 14,     username: "wru_marielle",    password: "467388",           tagId: null,    customfields: ["CN1","CN2","Fuel Capacity","Truck Model"]                                                                                                      },
-            "wilcon": {           ggsURL: "wru.server93.com",          appId: 427,    username: "wru_marielle",    password: "ilovecats",        tagId: 8634,    customfields: ["Truck Number","Plate Number"]                                                                                                                  }, // TagID: "ALL"
-            "pldt": {             ggsURL: "pldt.server93.com",         appId: 208,    username: "wru_dev",         password: "iwanttomukbang",   tagId: null,    customfields: []                                                                                                                  },
-            "cemex": {            ggsURL: "wru.server93.com",          appId: 449,    username: "wru_dev",         password: "wplof4521amc",     tagId: null,    customfields: ["Trucker", "Driver Name"], customSave: CUSTOMSAVE['cemex']                                                                                                                  },
+            "wilcon": {            ggsURL: "wru.server93.com",             appId: 427,    username: "wru_marielle",    password: "ilovecats",        tagId: 8634,    customfields: ["Truck Number","Plate Number"]                                                                                                                  }, // TagID: "ALL"
+            "pldt": {              ggsURL: "pldt.server93.com",            appId: 208,    username: "wru_dev",         password: "iwanttomukbang",   tagId: null,    customfields: []                                                                                                                  },
+            "cemex": {             ggsURL: "wru.server93.com",             appId: 449,    username: "wru_dev",         password: "wplof4521amc",     tagId: null,    customfields: ["Trucker", "Driver Name"], customSave: CUSTOMSAVE['cemex']                                                                                                                  },
+            "orient_freight": {    ggsURL: "wru.server93.com",             appId: 468,    username: "wru_marielle",    password: "ilovecats",        tagId: null,    customfields: []                                                                                                                  }, // TagID: "ALL"
         };
 
         var hasError = false; // check if there were error/s during process(). 

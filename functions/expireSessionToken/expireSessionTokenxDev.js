@@ -43,16 +43,20 @@ exports.expireSessionTokenxDev = (req, res) => {
             // "wd-coket2": null,
             // "wd-fleet":  null,
             "wd-wilcon": null,
+            "wd-orient_freight": null,
 
             "wm-wilcon": null,
+            "wm-orient_freight": null,
         };
         const CLIENT_OPTIONS = {
             // "wd-coket1": { type: "asHours", value: 2 },
             // "wd-coket2": { type: "asHours", value: 2 },
             // "wd-fleet":  { type: "asHours", value: 2 },
             "wd-wilcon": { expiry: true },
+            "wd-orient_freight": { expiry: true },
 
             "wm-wilcon": { expiry: true },
+            "wm-orient_freight": { expiry: true },
         };
 
         // array of promises

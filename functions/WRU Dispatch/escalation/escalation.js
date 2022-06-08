@@ -75,10 +75,12 @@ exports.escalation = (req, res) => {
         const CLIENTS = {
             // "coket1":null,
             "wilcon":null,
+            "orient_freight":null,
         };
         const CLIENT_OPTIONS = {
             // "coket1":{ pathName: "CokeT1", ot: "origin-based" },
             "wilcon":{ pathName: "Wilcon", overCICO: "startAt-startOfShift" },
+            "orient_freight":{ pathName: "OrientFreight", overCICO: "startAt-startOfShift" },
         };
 
         // delay options. Minimum and maximum time for each delay/escalation level
